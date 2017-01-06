@@ -1,0 +1,22 @@
+# Compiled Sources #
+*.o
+simulator
+strang-splitting_test
+*.a
+
+# Build Process #
+CMakeCache.txt
+CMakeFiles
+CTestTestfile.cmake
+Makefile
+cmake_install.cmake
+
+# Testing #
+Testing
+fft_test
+
+# Logs #
+*.log
+
+# Workspace stuff #
+*.sublime*
