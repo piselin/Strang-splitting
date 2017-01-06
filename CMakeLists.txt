@@ -33,7 +33,7 @@ target_link_libraries(simulator ${FFTW_LIBRARY})
 
 
 ############# Google Test ##################
-set(PROJECT_TEST_NAME ${PROJECT_NAME}_test)
+set(PROJECT_TEST_NAME ${PROJECT_NAME}-test)
 find_package(GTest REQUIRED)
 
 # Include gtest library

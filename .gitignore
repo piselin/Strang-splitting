@@ -1,7 +1,7 @@
 # Compiled Sources #
 *.o
 simulator
-strang-splitting_test
+strang-splitting-test
 *.a
 
 # Build Process #
