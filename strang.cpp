@@ -8,42 +8,6 @@ double harmonic(const double x) {
 	return 0.5*(x*x);
 }
 
-// PRE: N is the number of discrete grid points
-// POST: return the laplacian (FIXME pi)
-std::vector<double> create_laplacian_1d(const unsigned int N) {
-
-	const int n = N;
-
-	std::vector<double> a(n/2, 0);
-	std::vector<double> b(n/2, 0);
-
-	std::iota(a.begin(), a.end(), 0);		// fill range evenly spaced starting at 0
-	std::iota(b.begin(), b.end(), -n/2);	// fill range evenly spaced starting at -n/2
-
-	for(auto x : b)
-		a.push_back(x);
-
-	// calculate x^2*1/2*eps for each element
-	std::for_each(a.begin(), a.end(), [](double& x) {x*=x*0.5*eps;});
-
-	return a; 
-}
-
-std::vector<double> create_grid_1d(const unsigned int N) {
-	std::vector<double> a(N, 0.0);
-	a[0] = -1;
-	double increment = 2.0/N;
-	for(size_t i = 1; i < a.size(); i++) {
-		a[i] = a[i-1] + increment;
-	}
-
-	// scale 
-	for(size_t i = 0; i < a.size(); i++) {
-		a[i] = M_PI*a[i];
-	}
-
-	return a;
-}
 
 // pass function...
 std::vector<double> initialvalue(const std::vector<double>& grid) {
@@ -61,22 +25,21 @@ std::vector<double> initialvalue(const std::vector<double>& grid) {
 	return result;
 }
 
-std::vector<float> MakeMyData() {
-	return {0,1,2,3,4,5,6,7};
-}
 
 void split() {
 	//auto f = [=] (auto x) {std::cout << x << std::endl;};
 
 	// 1. Set up environment
-	auto scale = M_PI;
+	const auto scale = M_PI;
+	const real_t Dim = 2;
 
+	// time
 	const double tend = 5.0*std::sqrt(ieps);
 	const int n_timesteps = tend*10;
 	std::cout << "Doing " << n_timesteps << " timesteps" << std::endl;
-
-	const double h = tend/n_timesteps; // h is delta_t
-	complex_t ih = h*1i;
+	
+	const double delta_t = tend/n_timesteps; // delta_t is h in python
+	complex_t delta_t_c = delta_t*1i;				// this is ih in python
 
 
 	// space discretisation
@@ -85,67 +48,81 @@ void split() {
 	std::cout << N << std::endl;
 
 	// Laplacian
-	std::vector<double> laplacian = create_laplacian_1d(N);
-	// std::cout << laplacian.back() << std::endl;
-	// std::cout << laplacian[laplacian.size()/2-1] << std::endl;
-	// std::cout << laplacian[laplacian.size()/2] << std::endl;
-	// std::cout << laplacian[laplacian.size()/2+1] << std::endl;
+	std::vector<double> laplacian = util::CreateLaplacian1D(N);
+	//CMatrix<N,N> A = laplacian.asDiagonal();
+	CMatrix<N,N> A = util::CreateLaplacian(N);
+	std::cout << A << std::endl;
+	
+					// std::cout << laplacian.back() << std::endl;
+					// std::cout << laplacian[laplacian.size()/2-1] << std::endl;
+					// std::cout << laplacian[laplacian.size()/2] << std::endl;
+					// std::cout << laplacian[laplacian.size()/2+1] << std::endl;
 
 	// Potential
-	std::vector<double> x = create_grid_1d(N);
+	//std::vector<double> x = util::CreateGrid1D(N);
 	// for(auto i : x)
 	// 	std::cout << i << std::endl;
 
-	std::vector<double> v = initialvalue(x);
+	// functor
+	HarmonicPotential<double> potential;	// this is to V in python
+	CMatrix<N,N> V = util::IntializePotential(N, potential);
+
+
+	// std::vector<double> v = initialvalue(x);
 	// for(auto i: v)
 	// 	std::cout << i << std::endl;
 
-	// /* FFTW */
-	// fftw_complex in[v.size()];
-	// for (size_t i = 0; i < v.size(); ++i) {
-	// 	in[i][0] = v[i];	// real 
-	// 	in[i][1] = 0.0;		// imaginary
- //    }
+	Eigen::FFT<double> fft;
+	std::vector<std::complex<double>> u;
 
-	// fftw_plan p_inplace = fftw_plan_dft_1d(N, in, in, FFTW_FORWARD, FFTW_ESTIMATE);
-	// fftw_execute(p_inplace);
+	// u => freqvec
+	// v => timevec
+	fft.fwd(u, v);
+	// for(auto x : u)
+	// 	std::cout << x << std::endl;
 
-	// for(unsigned int i = 0; i < N; i++)
-	// 	std::cout << in[i][0] << " " << in[i][1] << std::endl;
-	
 
-	/*
 
-	just testing
 
-	*/
+	// Exponentials
+	A *= delta_t_c;
+	CMatrix<N,N> ea = A.exp();
+	std::cout << "norm = " << ea.norm() << std::endl;
 
-	Eigen::FFT<float> fft;
+	CMatrix<N,N> V = 
 
-	std::vector<float> timevec = MakeMyData();
-	std::vector<std::complex<float>> freqvec;
-
-	std::cout << "forward" << std::endl;
-
-	fft.fwd(freqvec, timevec);
-	for(auto x : freqvec)
-		std::cout << x << std::endl;
-
-	std::cout << "backward" << std::endl;
-
-	fft.inv(timevec, freqvec);
-	for(auto x : timevec)
-		std::cout << x << std::endl;
 
 	/*
-
-	just testing
-
+	=====================================================
+	EXAMPLE eigen fft useage
 	*/
 
+	// Eigen::FFT<float> fft;
+
+	// std::vector<float> timevec  = {0,1,2,3,4,5,6,7};
+	// std::vector<std::complex<float>> freqvec;
+
+	// std::cout << "forward" << std::endl;
+
+	// fft.fwd(freqvec, timevec);
+	// for(auto x : freqvec)
+	// 	std::cout << x << std::endl;
+
+	// std::cout << "backward" << std::endl;
+
+	// fft.inv(timevec, freqvec);
+	// for(auto x : timevec)
+	// 	std::cout << x << std::endl;
+
+	/*
+	=====================================================
+	*/
+
+	// HarmonicPotential<double> hp;
+	// std::cout << hp(2) << std::endl;
+
+	const int D = 2;
+	Eigen::Matrix<double, D,D> m1;
+	std::cout << m1.size() << std::endl;
 	
-
-	// 2. strang splitting
-
-	// 3. print solution
 }

@@ -1,6 +1,9 @@
 #include <iostream>
 #include "gtest/gtest.h"
+
+// my own libraries
 #include "strang.hpp"
+#include "util.hpp"
 
 
 class FFtransformTest : public ::testing::Test {
@@ -16,21 +19,33 @@ TEST_F(FFtransformTest, JustADummyTest) {
 	EXPECT_EQ(1,1.0);
 }
 
-// class DisassemblyTest : public ::testing::Test {
-// protected:
-// 	virtual void SetUp() {}
+TEST(Util, LaplacianContent) {
+	const unsigned size = 16;
 
-// 	Disassembler d;
-// };
+	auto laplacian = util::CreateLaplacian1D(size);
+	std::vector<double> ref = {0, 0.005, 0.02, 0.045, 0.08, 0.125, 0.18, 0.245, 0.32, 0.245, 0.18, 0.125, 0.08, 0.045, 0.02, 0.005};
 
-// // TEST_F(DisassemblyTest, CountDigits) {
-	
-// // 	EXPECT_EQ(1, d.CountDigits(0x1));
-// // 	EXPECT_EQ(3, d.CountDigits(0x321));
-// // 	EXPECT_EQ(8, d.CountDigits(0x3200000f));
-// // 	EXPECT_EQ(0, d.CountDigits(0));
-// // }
+	// sum up the elemets and compare them
+	double s1 = std::accumulate(laplacian.begin(), laplacian.end(), 0);
+	double s2 = std::accumulate(ref.begin(), ref.end(), 0);
+	EXPECT_EQ(s1, s2);
 
+	for(unsigned int i = 0; i < size; ++i)
+		EXPECT_FLOAT_EQ(ref[i], laplacian[i]);
+}
+
+
+TEST(Util, GridContent) {
+	const unsigned grid_size = 16;
+	auto grid = util::CreateGrid1D(grid_size);
+	std::vector<double> ref = {-3.14159265, -2.74889357, -2.35619449, -1.96349541, -1.57079633,
+       -1.17809725, -0.78539816, -0.39269908,  0.        ,  0.39269908,
+        0.78539816,  1.17809725,  1.57079633,  1.96349541,  2.35619449,
+        2.74889357};
+
+    for(unsigned int i = 0; i < grid_size; ++i)
+		EXPECT_FLOAT_EQ(ref[i], grid[i]);
+}
 
 int main(int argc, char **argv) {
 	::testing::InitGoogleTest(&argc, argv);

@@ -8,31 +8,57 @@
 #include <vector>
 
 #include <Eigen/Core>
-
-//#include <fftw3.h>
+#include <unsupported/Eigen/MatrixFunctions>
 #include <unsupported/Eigen/FFT>
 
+//#include <fftw3.h>
 //#include "../kiss_fft130/kiss_fft.h"
 
 #include "types.hpp"
+#include "util.hpp"
 
-
+// Parameter
+// fixme pi: move to config file?
 const double eps = 0.01;
 const double ieps = 1.0/eps;
 
-//double harmonic(const double x, const double v0=8, const double beta=0.25) {
+
+//fixme: should be some OO based desing!
+
+// class StrangSplitter {
+// public:
+// 	StrangSplitter(const unsigned int dimension, const double epsilon)
+// 		:
+// 		dim_(dimension),
+// 		eps_(epsilon)
+// 		{}
+	
+
+// private:
+// 	const unsigned int dim_;
+// 	const double eps_ = 0.01;
+// 	const double ieps_ = 1.0/eps_;
+
+// };
+
+
 
 // PRE: x is a discrete coordinate
 double harmonic(const double x);
 
-// PRE: N is the number of discrete grid points
-// POST: return the laplacian (FIXME pi)
-std::vector<double> create_laplacian_1d(const unsigned int N);
-
-std::vector<double> create_grid_1d(const unsigned int N);
-
 // pass function...
 std::vector<double> initialvalue(const std::vector<double>& grid);
+
+// funciton object (functor)
+template<typename T>
+class HarmonicPotential {
+public:
+	real_t operator()(const T& x) const {
+		return 0.5*x*x;
+	}
+};
+
+
 
 void split();
 

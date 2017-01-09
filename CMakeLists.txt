@@ -10,9 +10,10 @@ add_definitions(
 	)
 
 add_library(strang_lib strang.cpp)
+add_library(strang_util_lib util.cpp)
 
 add_executable(simulator simulator.cpp)
-target_link_libraries(simulator strang_lib)
+target_link_libraries(simulator strang_lib strang_util_lib)
 
 
 ############# Eigen ##################
@@ -52,7 +53,7 @@ add_executable(${PROJECT_TEST_NAME} unit_tests.cpp)
 
 # linking to gtest
 target_link_libraries(${PROJECT_TEST_NAME} ${LINK_LIBS})
-target_link_libraries(${PROJECT_TEST_NAME} strang_lib)
+target_link_libraries(${PROJECT_TEST_NAME} strang_lib strang_util_lib)
 
 
 # make the test runnable with 
