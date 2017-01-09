@@ -1,7 +1,7 @@
 // scalar types
-typedef double real_t;
-typedef std::complex<real_t> complex_t;
-typedef int dim_t;
+using real_t = double;
+using complex_t = std::complex<real_t>;
+using dim_t = int;
 
 template<int R, int C>
 using CMatrix = Eigen::Matrix<complex_t,R,C>;
