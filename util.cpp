@@ -2,7 +2,7 @@
 
 namespace util  {
 
-	Eigen::MatrixXcd IntializePotential(const unsigned int N, HarmonicPotential<double>& pot) {
+	Eigen::MatrixXcd IntializePotential(const unsigned int n, HarmonicPotential<double>& pot) {
 		Eigen::MatrixXcd m(n,n);
 		return m;
 	}

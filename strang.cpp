@@ -26,6 +26,61 @@ std::vector<double> initialvalue(const std::vector<double>& grid) {
 }
 
 
+Eigen::MatrixXcd IntializePotential(const unsigned int n, HarmonicPotential<double>& pot) {
+	Eigen::MatrixXcd m(n,n);
+	return m;
+}
+
+Eigen::MatrixXcd CreateLaplacian(const unsigned int n) {
+	assert(n>0);
+	std::vector<double> l = CreateLaplacian1D(n);
+	Eigen::MatrixXcd m(n,n);
+
+	for(unsigned int i = 0; i < n; ++i)
+		m(i,i) = l[i];
+	return m;
+}
+
+
+// PRE: N is the number of discrete grid points
+// POST: return the laplacian (FIXME pi)
+std::vector<double> CreateLaplacian1D(const unsigned int N) {
+	double eps = 0.01;
+	const int n = N;
+
+	std::vector<double> a(n/2, 0);
+	std::vector<double> b(n/2, 0);
+
+	std::iota(a.begin(), a.end(), 0);		// fill range evenly spaced starting at 0
+	std::iota(b.begin(), b.end(), -n/2);	// fill range evenly spaced starting at -n/2
+
+	for(auto x : b)
+		a.push_back(x);
+
+	// calculate x^2*1/2*eps for each element
+	std::for_each(a.begin(), a.end(), [&](double& x) {x*=x*0.5*eps;});
+
+	return a; 
+}
+
+
+std::vector<double> CreateGrid1D(const unsigned int N) {
+	std::vector<double> a(N, 0.0);
+	a[0] = -1;
+	double increment = 2.0/N;
+	for(size_t i = 1; i < a.size(); i++) {
+		a[i] = a[i-1] + increment;
+	}
+
+	// scale 
+	for(size_t i = 0; i < a.size(); i++) {
+		a[i] = M_PI*a[i];
+	}
+
+	return a;
+}
+
+
 void split() {
 	//auto f = [=] (auto x) {std::cout << x << std::endl;};
 
@@ -48,9 +103,9 @@ void split() {
 	std::cout << N << std::endl;
 
 	// Laplacian
-	std::vector<double> laplacian = util::CreateLaplacian1D(N);
+	std::vector<double> laplacian = CreateLaplacian1D(N);
 	//CMatrix<N,N> A = laplacian.asDiagonal();
-	CMatrix<N,N> A = util::CreateLaplacian(N);
+	CMatrix<N,N> A = CreateLaplacian(N);
 	std::cout << A << std::endl;
 	
 					// std::cout << laplacian.back() << std::endl;
@@ -59,16 +114,16 @@ void split() {
 					// std::cout << laplacian[laplacian.size()/2+1] << std::endl;
 
 	// Potential
-	//std::vector<double> x = util::CreateGrid1D(N);
+	std::vector<double> x = CreateGrid1D(N);
 	// for(auto i : x)
 	// 	std::cout << i << std::endl;
 
 	// functor
 	HarmonicPotential<double> potential;	// this is to V in python
-	CMatrix<N,N> V = util::IntializePotential(N, potential);
+	CMatrix<N,N> V = IntializePotential(N, potential);
 
 
-	// std::vector<double> v = initialvalue(x);
+	std::vector<double> v = initialvalue(x);
 	// for(auto i: v)
 	// 	std::cout << i << std::endl;
 
@@ -89,7 +144,7 @@ void split() {
 	CMatrix<N,N> ea = A.exp();
 	std::cout << "norm = " << ea.norm() << std::endl;
 
-	CMatrix<N,N> V = 
+	//CMatrix<N,N> V = 
 
 
 	/*

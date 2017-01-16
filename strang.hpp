@@ -15,7 +15,6 @@
 //#include "../kiss_fft130/kiss_fft.h"
 
 #include "types.hpp"
-#include "util.hpp"
 
 // Parameter
 // fixme pi: move to config file?
@@ -41,15 +40,13 @@ const double ieps = 1.0/eps;
 
 // };
 
-
-
 // PRE: x is a discrete coordinate
 double harmonic(const double x);
 
 // pass function...
 std::vector<double> initialvalue(const std::vector<double>& grid);
 
-// funciton object (functor)
+// function object (functor)
 template<typename T>
 class HarmonicPotential {
 public:
@@ -59,6 +56,13 @@ public:
 };
 
 
+std::vector<double> CreateLaplacian1D(const unsigned int N);
+std::vector<double> CreateGrid1D(const unsigned int N);
+
+Eigen::MatrixXcd CreateLaplacian(const unsigned int N);
+
+template<typename T>
+Eigen::MatrixXcd IntializePotential(const unsigned int N, HarmonicPotential<T>& pot);
 
 void split();
 

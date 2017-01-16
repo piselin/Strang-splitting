@@ -3,8 +3,6 @@
 
 // my own libraries
 #include "strang.hpp"
-#include "util.hpp"
-
 
 class FFtransformTest : public ::testing::Test {
 	// setup
@@ -22,7 +20,7 @@ TEST_F(FFtransformTest, JustADummyTest) {
 TEST(Util, LaplacianContent) {
 	const unsigned size = 16;
 
-	auto laplacian = util::CreateLaplacian1D(size);
+	auto laplacian = CreateLaplacian1D(size);
 	std::vector<double> ref = {0, 0.005, 0.02, 0.045, 0.08, 0.125, 0.18, 0.245, 0.32, 0.245, 0.18, 0.125, 0.08, 0.045, 0.02, 0.005};
 
 	// sum up the elemets and compare them
@@ -37,7 +35,7 @@ TEST(Util, LaplacianContent) {
 
 TEST(Util, GridContent) {
 	const unsigned grid_size = 16;
-	auto grid = util::CreateGrid1D(grid_size);
+	auto grid = CreateGrid1D(grid_size);
 	std::vector<double> ref = {-3.14159265, -2.74889357, -2.35619449, -1.96349541, -1.57079633,
        -1.17809725, -0.78539816, -0.39269908,  0.        ,  0.39269908,
         0.78539816,  1.17809725,  1.57079633,  1.96349541,  2.35619449,

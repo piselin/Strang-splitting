@@ -16,7 +16,7 @@
 
 namespace util {
 
-	std::vector<double> CreateLaplacian1D(const unsigned int N);
+	std::vector<double> CreateLaplacian1D(const unsigned int n);
 	std::vector<double> CreateGrid1D(const unsigned int N);
 
 	Eigen::MatrixXcd CreateLaplacian(const unsigned int N);
