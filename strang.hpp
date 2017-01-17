@@ -44,7 +44,7 @@ const double ieps = 1.0/eps;
 double harmonic(const double x);
 
 // pass function...
-std::vector<double> initialvalue(const std::vector<double>& grid);
+std::vector<std::complex<double>> Initialvalue(const std::vector<double>& grid);
 
 // function object (functor)
 template<typename T>
@@ -62,7 +62,22 @@ std::vector<double> CreateGrid1D(const unsigned int N);
 Eigen::MatrixXcd CreateLaplacian(const unsigned int N);
 
 template<typename T>
-Eigen::MatrixXcd IntializePotential(const unsigned int N, HarmonicPotential<T>& pot);
+std::vector<double> IntializePotential(const unsigned int n, HarmonicPotential<T>& pot);
+//Eigen::MatrixXcd IntializePotential(const unsigned int N, HarmonicPotential<T>& pot);
+double norm(const std::vector<std::complex<double>>& v);
+
+void InitializeExponentialA(
+		const size_t N, 
+		const std::complex<double> k, 
+		const std::vector<double>& laplacian, 
+		std::vector<std::complex<double>>& ea);
+
+void InitializeExponentialB(
+		const size_t N, 
+		const std::complex<double> k, 
+		const std::vector<double>& V, 
+		std::vector<std::complex<double>>& eb);
+
 
 void split();
 

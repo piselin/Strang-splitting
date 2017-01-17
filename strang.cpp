@@ -10,10 +10,10 @@ double harmonic(const double x) {
 
 
 // pass function...
-std::vector<double> initialvalue(const std::vector<double>& grid) {
-	std::vector<double> result(grid.size(), 0.0);
+std::vector<std::complex<double>> Initialvalue(const std::vector<double>& grid) {
+	std::vector<std::complex<double>> result(grid.size(), 0.0);
 
-	//////////// g1 ////////////////////////////////
+	//////////// g1 initial value  /////////////////
 	double a = std::sqrt(std::sqrt(ieps/M_PI));
 	for(size_t i = 0; i < grid.size(); i++) {
 		double x = grid[i];
@@ -26,9 +26,14 @@ std::vector<double> initialvalue(const std::vector<double>& grid) {
 }
 
 
-Eigen::MatrixXcd IntializePotential(const unsigned int n, HarmonicPotential<double>& pot) {
-	Eigen::MatrixXcd m(n,n);
-	return m;
+// Eigen::MatrixXcd IntializePotential(const unsigned int n, HarmonicPotential<double>& pot) {
+// 	Eigen::MatrixXcd m(n,n);
+// 	return m;
+// }
+std::vector<double> IntializePotential(const unsigned int n, HarmonicPotential<double>& pot) {
+	std::vector<double> V(n, 0.0);
+
+	return V;
 }
 
 Eigen::MatrixXcd CreateLaplacian(const unsigned int n) {
@@ -80,6 +85,39 @@ std::vector<double> CreateGrid1D(const unsigned int N) {
 	return a;
 }
 
+double norm(const std::vector<std::complex<double>>& v) {
+	double r = 0.;
+	for(size_t i = 0; i < v.size(); ++i) {
+		r += std::norm(v[i]);
+	}
+	
+	return std::sqrt(r);
+}
+
+void InitializeExponentialA(
+		const size_t N, 
+		const std::complex<double> k, 
+		const std::vector<double>& laplacian, 
+		std::vector<std::complex<double>>& ea) 
+{
+
+	for(size_t i = 0; i < N; ++i) {
+		ea[i] = std::exp(-k*laplacian[i]);
+	}
+}
+
+void InitializeExponentialB(
+		const size_t N, 
+		const std::complex<double> k, 
+		const std::vector<double>& V, 
+		std::vector<std::complex<double>>& eb)
+{
+
+	for(size_t i = 0; i < N; ++i) {
+		eb[i] = std::exp(-0.5*k*V[i]);
+	}
+}
+
 
 void split() {
 	//auto f = [=] (auto x) {std::cout << x << std::endl;};
@@ -91,7 +129,7 @@ void split() {
 	// time
 	const double tend = 5.0*std::sqrt(ieps);
 	const int n_timesteps = tend*10;
-	std::cout << "Doing " << n_timesteps << " timesteps" << std::endl;
+	//std::cout << "Doing " << n_timesteps << " timesteps" << std::endl;
 	
 	const double delta_t = tend/n_timesteps; // delta_t is h in python
 	complex_t delta_t_c = delta_t*1i;				// this is ih in python
@@ -100,13 +138,13 @@ void split() {
 	// space discretisation
 	const unsigned int l = 4;
 	const unsigned int N = 1<<l; // calculate 2^l	
-	std::cout << N << std::endl;
+	//std::cout << N << std::endl;
 
 	// Laplacian
 	std::vector<double> laplacian = CreateLaplacian1D(N);
 	//CMatrix<N,N> A = laplacian.asDiagonal();
-	CMatrix<N,N> A = CreateLaplacian(N);
-	std::cout << A << std::endl;
+	//CMatrix<N,N> A = CreateLaplacian(N);
+	//std::cout << A << std::endl;
 	
 					// std::cout << laplacian.back() << std::endl;
 					// std::cout << laplacian[laplacian.size()/2-1] << std::endl;
@@ -119,11 +157,18 @@ void split() {
 	// 	std::cout << i << std::endl;
 
 	// functor
-	HarmonicPotential<double> potential;	// this is to V in python
-	CMatrix<N,N> V = IntializePotential(N, potential);
+	HarmonicPotential<double> potential;
+	//CMatrix<N,N> V = IntializePotential(N, potential);
+	//std::vector<double> pot = IntializePotential(N, potential);
+	std::vector<double> V(N, 0.0);
+	for(size_t i = 0; i < N; ++i) {
+		V[i] = ieps*potential(x[i]);
+	}
+	// std::cout << "pot" << std::endl;
+	// for(auto x : V)
+	// 	std::cout << x << std::endl;
 
-
-	std::vector<double> v = initialvalue(x);
+	std::vector<std::complex<double>> v = Initialvalue(x);
 	// for(auto i: v)
 	// 	std::cout << i << std::endl;
 
@@ -132,17 +177,75 @@ void split() {
 
 	// u => freqvec
 	// v => timevec
+	// std::cout << "before" << std::endl;
+	// for(auto x : v)
+	// 	std::cout << x << std::endl;
+
 	fft.fwd(u, v);
+
+	// std::cout << "u" << std::endl;
 	// for(auto x : u)
+	// 	std::cout << x << std::endl;
+
+	// std::cout << "after" << std::endl;
+	// for(auto x : v)
 	// 	std::cout << x << std::endl;
 
 
 
-
 	// Exponentials
-	A *= delta_t_c;
-	CMatrix<N,N> ea = A.exp();
-	std::cout << "norm = " << ea.norm() << std::endl;
+	std::vector<std::complex<double>> ea(N, 0.0);
+	for(size_t i = 0; i < N; ++i) {
+		ea[i] = std::exp(-delta_t_c*laplacian[i]);
+	}
+
+	std::vector<std::complex<double>> eb(N, 0.0);
+	for(size_t i = 0; i < N; ++i) {
+		eb[i] = std::exp(-0.5*delta_t_c * V[i]);
+	}
+
+	// for(auto x : eb)
+	// 	std::cout << x << std::endl;
+
+
+	// Strang Splitting Algorithm
+	for(size_t step = 1; step <= n_timesteps; ++step) {
+		//std::cout << "running" << std::endl;
+		// 1. v = eb*v
+		for(size_t i = 0; i < N; ++i)
+			v[i] = eb[i]*v[i];
+
+		// 2. v = fft(v)
+		fft.fwd(v,v);
+
+		// 3. v = ea*v
+		for(size_t i = 0; i < N; ++i)
+			v[i] = ea[i]*v[i];
+
+		// 4. v = ifft(v)
+		fft.inv(v,v);
+
+		// 5. v = eb*v
+		for(size_t i = 0; i < N; ++i)
+			v[i] = eb[i]*v[i];
+
+		std::cout << "Norm in " << step << " = " << norm(v) << std::endl;
+
+	}
+
+	std::cout << "after" << std::endl;
+	for(auto x : v)
+		std::cout << x << std::endl;
+
+	std::cout << "Norm = " << norm(v) << std::endl;
+
+
+	//std::vector<std::complex<double>> eb(N, 0.0);
+
+
+	// A *= delta_t_c;
+	// CMatrix<N,N> ea = A.exp();
+	// std::cout << "norm = " << ea.norm() << std::endl;
 
 	//CMatrix<N,N> V = 
 
@@ -176,8 +279,8 @@ void split() {
 	// HarmonicPotential<double> hp;
 	// std::cout << hp(2) << std::endl;
 
-	const int D = 2;
-	Eigen::Matrix<double, D,D> m1;
-	std::cout << m1.size() << std::endl;
+	// const int D = 2;
+	// Eigen::Matrix<double, D,D> m1;
+	// std::cout << m1.size() << std::endl;
 	
 }

@@ -13,9 +13,25 @@ class FFtransformTest : public ::testing::Test {
 	// not sure if this would work for GTest
 };
 
-TEST_F(FFtransformTest, JustADummyTest) {
-	EXPECT_EQ(1,1.0);
-}
+
+class SetupTester : public ::testing::Test {
+protected:
+	virtual void SetUp() {
+		tend = 5.0*std::sqrt(ieps);
+		n_timesteps = tend*10;	
+		delta_t = tend/n_timesteps; // delta_t is h in python;
+		delta_t_c = delta_t*1i;		
+		N = 16;
+	}
+
+	double tend;
+	int n_timesteps;
+	double delta_t;
+	complex_t delta_t_c;
+
+	int N;
+
+};
 
 TEST(Util, LaplacianContent) {
 	const unsigned size = 16;
@@ -43,6 +59,47 @@ TEST(Util, GridContent) {
 
     for(unsigned int i = 0; i < grid_size; ++i)
 		EXPECT_FLOAT_EQ(ref[i], grid[i]);
+}
+
+TEST(Util, Norm) {
+	std::vector<std::complex<double>> v;
+
+	double n = 0;
+	v.push_back(0);
+	EXPECT_FLOAT_EQ(0, n*n);
+
+	v.push_back(1+1i);
+	n = norm(v);
+	EXPECT_FLOAT_EQ(2.0, n*n);
+}
+
+TEST_F(SetupTester, ExponentialA) {
+
+	std::vector<double> laplacian = CreateLaplacian1D(N);
+	std::vector<std::complex<double>> ea(N, 0.0);
+	InitializeExponentialA(N, delta_t_c, laplacian, ea);
+
+	double n = norm(ea);
+	EXPECT_FLOAT_EQ(4.0, n);	// from python
+}
+
+TEST_F(SetupTester, ExponentialB) {
+
+	std::vector<double> x = CreateGrid1D(N);
+	// functor
+	HarmonicPotential<double> potential;
+	//CMatrix<N,N> V = IntializePotential(N, potential);
+	//std::vector<double> pot = IntializePotential(N, potential);
+	std::vector<double> V(N, 0.0);
+	for(size_t i = 0; i < N; ++i) {
+		V[i] = ieps*potential(x[i]);
+	}
+
+	std::vector<std::complex<double>> eb(N, 0.0);
+	InitializeExponentialB(N, delta_t_c, V, eb);
+	
+	double n = norm(eb);
+	EXPECT_FLOAT_EQ(4.0, n);
 }
 
 int main(int argc, char **argv) {
