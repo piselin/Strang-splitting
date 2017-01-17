@@ -18,8 +18,9 @@
 
 // Parameter
 // fixme pi: move to config file?
-const double eps = 0.01;
-const double ieps = 1.0/eps;
+const double kEps = 0.01;
+const double kIEps = 1.0/kEps;
+const auto kScaleGrid = M_PI;
 
 
 //fixme: should be some OO based desing!

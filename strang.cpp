@@ -14,11 +14,11 @@ std::vector<std::complex<double>> Initialvalue(const std::vector<double>& grid) 
 	std::vector<std::complex<double>> result(grid.size(), 0.0);
 
 	//////////// g1 initial value  /////////////////
-	double a = std::sqrt(std::sqrt(ieps/M_PI));
+	double a = std::sqrt(std::sqrt(kIEps/M_PI));
 	for(size_t i = 0; i < grid.size(); i++) {
 		double x = grid[i];
 		x*=x; // x^2
-		result[i] = a*std::exp(-1*0.5*ieps*x);
+		result[i] = a*std::exp(-1*0.5*kIEps*x);
 	}
 	////////////////////////////////////////////////
 
@@ -50,7 +50,7 @@ Eigen::MatrixXcd CreateLaplacian(const unsigned int n) {
 // PRE: N is the number of discrete grid points
 // POST: return the laplacian (FIXME pi)
 std::vector<double> CreateLaplacian1D(const unsigned int N) {
-	double eps = 0.01;
+	double kEps = 0.01;
 	const int n = N;
 
 	std::vector<double> a(n/2, 0);
@@ -62,8 +62,8 @@ std::vector<double> CreateLaplacian1D(const unsigned int N) {
 	for(auto x : b)
 		a.push_back(x);
 
-	// calculate x^2*1/2*eps for each element
-	std::for_each(a.begin(), a.end(), [&](double& x) {x*=x*0.5*eps;});
+	// calculate x^2*1/2*kEps for each element
+	std::for_each(a.begin(), a.end(), [&](double& x) {x*=x*0.5*kEps;});
 
 	return a; 
 }
@@ -79,7 +79,7 @@ std::vector<double> CreateGrid1D(const unsigned int N) {
 
 	// scale 
 	for(size_t i = 0; i < a.size(); i++) {
-		a[i] = M_PI*a[i];
+		a[i] = kScaleGrid*a[i];
 	}
 
 	return a;
@@ -123,11 +123,11 @@ void split() {
 	//auto f = [=] (auto x) {std::cout << x << std::endl;};
 
 	// 1. Set up environment
-	const auto scale = M_PI;
+	//const auto scale = M_PI;
 	const real_t Dim = 2;
 
 	// time
-	const double tend = 5.0*std::sqrt(ieps);
+	const double tend = 5.0*std::sqrt(kIEps);
 	const int n_timesteps = tend*10;
 	//std::cout << "Doing " << n_timesteps << " timesteps" << std::endl;
 	
@@ -162,7 +162,7 @@ void split() {
 	//std::vector<double> pot = IntializePotential(N, potential);
 	std::vector<double> V(N, 0.0);
 	for(size_t i = 0; i < N; ++i) {
-		V[i] = ieps*potential(x[i]);
+		V[i] = kIEps*potential(x[i]);
 	}
 	// std::cout << "pot" << std::endl;
 	// for(auto x : V)
@@ -195,14 +195,10 @@ void split() {
 
 	// Exponentials
 	std::vector<std::complex<double>> ea(N, 0.0);
-	for(size_t i = 0; i < N; ++i) {
-		ea[i] = std::exp(-delta_t_c*laplacian[i]);
-	}
+	InitializeExponentialA(N, delta_t_c, laplacian, ea);
 
 	std::vector<std::complex<double>> eb(N, 0.0);
-	for(size_t i = 0; i < N; ++i) {
-		eb[i] = std::exp(-0.5*delta_t_c * V[i]);
-	}
+	InitializeExponentialB(N, delta_t_c, V, eb);
 
 	// for(auto x : eb)
 	// 	std::cout << x << std::endl;

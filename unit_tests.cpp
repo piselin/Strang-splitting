@@ -17,7 +17,7 @@ class FFtransformTest : public ::testing::Test {
 class SetupTester : public ::testing::Test {
 protected:
 	virtual void SetUp() {
-		tend = 5.0*std::sqrt(ieps);
+		tend = 5.0*std::sqrt(kIEps);
 		n_timesteps = tend*10;	
 		delta_t = tend/n_timesteps; // delta_t is h in python;
 		delta_t_c = delta_t*1i;		
@@ -92,14 +92,21 @@ TEST_F(SetupTester, ExponentialB) {
 	//std::vector<double> pot = IntializePotential(N, potential);
 	std::vector<double> V(N, 0.0);
 	for(size_t i = 0; i < N; ++i) {
-		V[i] = ieps*potential(x[i]);
+		V[i] = kIEps*potential(x[i]);
 	}
 
 	std::vector<std::complex<double>> eb(N, 0.0);
 	InitializeExponentialB(N, delta_t_c, V, eb);
-	
+
 	double n = norm(eb);
 	EXPECT_FLOAT_EQ(4.0, n);
+}
+
+TEST_F(SetupTester, InitialSolution) {
+	std::vector<double> x = CreateGrid1D(N);
+	std::vector<std::complex<double>> v = Initialvalue(x);
+
+	EXPECT_FLOAT_EQ(2.375268, norm(v));
 }
 
 int main(int argc, char **argv) {
