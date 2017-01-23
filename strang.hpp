@@ -16,6 +16,8 @@
 
 #include "types.hpp"
 
+#include "hdf5writer.hpp"
+
 // Parameter
 // fixme pi: move to config file?
 const double kEps = 0.01;

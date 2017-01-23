@@ -131,6 +131,9 @@ void split(	const unsigned int N,
 			) {
 
 
+	Hdf5Writer<4> writer("strang_1D_cpp.hdf5");
+	writer.tester();
+
 	Eigen::FFT<double> fft;
 
 	// Strang Splitting Algorithm

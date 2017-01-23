@@ -22,7 +22,7 @@ if(PKG_CONFIG_FOUND)
   pkg_search_module(EIGEN REQUIRED eigen3)
   if(EIGEN_FOUND)
     include_directories(${EIGEN_INCLUDE_DIRS})
-    message("EIGEN_INCLUDE_DIRS" ${EIGEN_INCLUDE_DIRS})
+    message("EIGEN_INCLUDE_DIRS " ${EIGEN_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -32,6 +32,25 @@ find_library(FFTW_LIBRARY NAMES fftw3f)
 target_link_libraries(strang_lib ${FFTW_LIBRARY})
 target_link_libraries(simulator ${FFTW_LIBRARY})
 
+############# HDF5 ##################
+find_package(HDF5 COMPONENTS CXX)
+if (HDF5_FOUND)
+  include_directories(${HDF5_INCLUDE_DIR})
+  message("HDF5_INCLUDE_DIRS " ${HDF5_INCLUDE_DIR})
+  set(LINK_LIBS ${LINK_LIBS} ${HDF5_LIBRARIES})
+endif()
+
+
+
+# find_package(HDF5 COMPONENTS CXX)
+# if (HDF5_FOUND)
+#   include_directories(${HDF5_INCLUDE_DIR})
+#   set(LINK_LIBS ${LINK_LIBS} ${HDF5_LIBRARIES})
+# endif()
+
+
+# target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
+
 
 ############# Google Test ##################
 set(PROJECT_TEST_NAME ${PROJECT_NAME}-test)
@@ -40,7 +59,7 @@ find_package(GTest REQUIRED)
 # Include gtest library
 include_directories(${GTEST_INCLUDE_DIRS})
 set(LINK_LIBS ${LINK_LIBS} ${GTEST_BOTH_LIBRARIES})
-message("GTEST_INCLUDE_DIRS" ${GTEST_INCLUDE_DIRS})
+message("GTEST_INCLUDE_DIRS " ${GTEST_INCLUDE_DIRS})
 
 # somehow this ins necessary...
 find_package(Threads)
@@ -49,10 +68,11 @@ set(LINK_LIBS ${LINK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 # Unit tests
 add_executable(${PROJECT_TEST_NAME} unit_tests.cpp)
-#add_dependencies(${PROJECT_TEST_NAME} gtest)
+add_executable(hdf5_writer_test hdf5_unit_tests.cpp)
 
 # linking to gtest
 target_link_libraries(${PROJECT_TEST_NAME} ${LINK_LIBS})
+target_link_libraries(hdf5_writer_test ${LINK_LIBS})
 target_link_libraries(${PROJECT_TEST_NAME} strang_lib)
 
 
@@ -63,3 +83,10 @@ add_test(
 	NAME ${PROJECT_TEST_NAME}
 	COMMAND ${PROJECT_TEST_NAME}
 )
+add_test(
+	NAME hdf5_writer_test
+	COMMAND hdf5_writer_test
+)
+
+############## Link everything together ##################
+target_link_libraries(strang_lib ${LINK_LIBS})
