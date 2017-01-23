@@ -80,7 +80,14 @@ void InitializeExponentialB(
 		std::vector<std::complex<double>>& eb);
 
 
-void split();
+void split(
+	const unsigned int N,	
+	const int n_timesteps,
+	const std::vector<std::complex<double>>& ea,
+	const std::vector<std::complex<double>>& eb,
+	std::vector<std::complex<double>>& v,
+	std::vector<std::complex<double>>& v_freq);
 
+void run();
 
 #endif /* STRANG_SPLITTNG_LIB */

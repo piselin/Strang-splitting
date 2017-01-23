@@ -85,6 +85,10 @@ std::vector<double> CreateGrid1D(const unsigned int N) {
 	return a;
 }
 
+/*
+Pre: 
+Post: Returns the euclidean norm ||z|| = sqrt(z*complex_conj(z))
+*/
 double norm(const std::vector<std::complex<double>>& v) {
 	double r = 0.;
 	for(size_t i = 0; i < v.size(); ++i) {
@@ -118,8 +122,61 @@ void InitializeExponentialB(
 	}
 }
 
+void split(	const unsigned int N,
+			const int n_timesteps,
+			const std::vector<std::complex<double>>& ea,
+			const std::vector<std::complex<double>>& eb,
+			std::vector<std::complex<double>>& v,
+			std::vector<std::complex<double>>& v_freq
+			) {
 
-void split() {
+
+	Eigen::FFT<double> fft;
+
+	// Strang Splitting Algorithm
+	for(size_t step = 1; step < n_timesteps; ++step) {
+		std::cout << "Timestep " << step << std::endl;
+		// 1. v = eb*v
+		for(size_t i = 0; i < N; ++i)
+			v[i] = eb[i]*v[i];
+
+		// std::cout << "before fft" << std::endl;
+		// for(auto x: v)
+		// 	std::cout << x << std::endl;
+		// 2. v = fft(v)
+		fft.fwd(v_freq,v);
+
+		// std::cout << "after fft" << std::endl;
+		// for(auto x: v_freq)
+		// 	std::cout << x << std::endl;
+
+		// 3. v = ea*v
+		for(size_t i = 0; i < N; ++i)
+			v_freq[i] = ea[i]*v_freq[i];
+
+		// 4. v = ifft(v)
+		fft.inv(v,v_freq);
+		// std::cout << "after inverse" << std::endl;
+		// for(auto x:v)
+		// 	std::cout << x << std::endl;
+
+		// 5. v = eb*v
+		for(size_t i = 0; i < N; ++i)
+			v[i] = eb[i]*v[i];
+
+		//std::cout << "Norm in " << step << " = " << norm(v) << std::endl;
+
+	}
+
+	std::cout << "after" << std::endl;
+	for(auto x : v)
+		std::cout << x << std::endl;
+
+	std::cout << "Norm = " << norm(v) << std::endl;
+
+}
+
+void run() {
 	//auto f = [=] (auto x) {std::cout << x << std::endl;};
 
 	// 1. Set up environment
@@ -172,7 +229,6 @@ void split() {
 	// for(auto i: v)
 	// 	std::cout << i << std::endl;
 
-	Eigen::FFT<double> fft;
 	std::vector<std::complex<double>> u;
 
 	// u => freqvec
@@ -181,7 +237,7 @@ void split() {
 	// for(auto x : v)
 	// 	std::cout << x << std::endl;
 
-	fft.fwd(u, v);
+	//fft.fwd(u, v);
 
 	// std::cout << "u" << std::endl;
 	// for(auto x : u)
@@ -203,37 +259,9 @@ void split() {
 	// for(auto x : eb)
 	// 	std::cout << x << std::endl;
 
+	std::vector<std::complex<double>> v_freq(0., N);
 
-	// Strang Splitting Algorithm
-	for(size_t step = 1; step <= n_timesteps; ++step) {
-		//std::cout << "running" << std::endl;
-		// 1. v = eb*v
-		for(size_t i = 0; i < N; ++i)
-			v[i] = eb[i]*v[i];
-
-		// 2. v = fft(v)
-		fft.fwd(v,v);
-
-		// 3. v = ea*v
-		for(size_t i = 0; i < N; ++i)
-			v[i] = ea[i]*v[i];
-
-		// 4. v = ifft(v)
-		fft.inv(v,v);
-
-		// 5. v = eb*v
-		for(size_t i = 0; i < N; ++i)
-			v[i] = eb[i]*v[i];
-
-		std::cout << "Norm in " << step << " = " << norm(v) << std::endl;
-
-	}
-
-	std::cout << "after" << std::endl;
-	for(auto x : v)
-		std::cout << x << std::endl;
-
-	std::cout << "Norm = " << norm(v) << std::endl;
+	split(N, n_timesteps, ea, eb, v, v_freq);
 
 
 	//std::vector<std::complex<double>> eb(N, 0.0);

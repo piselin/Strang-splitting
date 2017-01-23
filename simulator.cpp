@@ -5,7 +5,7 @@
 int main() {
 
 
-	split();
+	run();
 
 	return 0;
 }
