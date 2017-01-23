@@ -2,6 +2,7 @@
 *.o
 simulator
 strang-splitting-test
+hdf5_writer_test
 *.a
 
 # Build Process #
@@ -14,9 +15,13 @@ cmake_install.cmake
 # Testing #
 Testing
 fft_test
+hdf5_test
 
 # Logs #
 *.log
+
+#hdf5 files#
+*.hdf5
 
 # Workspace stuff #
 *.sublime*
