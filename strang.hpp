@@ -68,20 +68,13 @@ public:
 
 			// Strang Splitting Algorithm
 			for(size_t step = 1; step < n_timesteps_; ++step) {
-				//std::cout << "Timestep " << step << std::endl;
+			
 				// 1. v = eb*v
 				for(size_t i = 0; i < n_; ++i)
 					v_[i] = eb_[i]*v_[i];
 
-				// std::cout << "before fft" << std::endl;
-				// for(auto x: v)
-				// 	std::cout << x << std::endl;
 				// 2. v = fft(v)
 				fft.fwd(v_freq,v_);
-
-				// std::cout << "after fft" << std::endl;
-				// for(auto x: v_freq)
-				// 	std::cout << x << std::endl;
 
 				// 3. v = ea*v
 				for(size_t i = 0; i < n_; ++i)
@@ -89,10 +82,7 @@ public:
 
 				// 4. v = ifft(v)
 				fft.inv(v_,v_freq);
-				// std::cout << "after inverse" << std::endl;
-				// for(auto x:v)
-				// 	std::cout << x << std::endl;
-
+				
 				// 5. v = eb*v
 				for(size_t i = 0; i < n_; ++i)
 					v_[i] = eb_[i]*v_[i];
@@ -229,56 +219,5 @@ private:
 
 
 };
-
-
-
-// // PRE: x is a discrete coordinate
-// double harmonic(const double x);
-
-// // pass function...
-// std::vector<std::complex<double>> Initialvalue(const std::vector<double>& grid);
-
-// // function object (functor)
-// template<typename T>
-// class HarmonicPotential {
-// public:
-// 	real_t operator()(const T& x) const {
-// 		return 0.5*x*x;
-// 	}
-// };
-
-
-// std::vector<double> CreateLaplacian1D(const unsigned int N);
-// std::vector<double> CreateGrid1D(const unsigned int N);
-
-// Eigen::MatrixXcd CreateLaplacian(const unsigned int N);
-
-// template<typename T>
-// std::vector<double> IntializePotential(const unsigned int n, HarmonicPotential<T>& pot);
-// //Eigen::MatrixXcd IntializePotential(const unsigned int N, HarmonicPotential<T>& pot);
-// double norm(const std::vector<std::complex<double>>& v);
-
-// void InitializeExponentialA(
-// 		const size_t N, 
-// 		const std::complex<double> k, 
-// 		const std::vector<double>& laplacian, 
-// 		std::vector<std::complex<double>>& ea);
-
-// void InitializeExponentialB(
-// 		const size_t N, 
-// 		const std::complex<double> k, 
-// 		const std::vector<double>& V, 
-// 		std::vector<std::complex<double>>& eb);
-
-
-// void Split(
-// 	const unsigned int N,	
-// 	const int n_timesteps,
-// 	const std::vector<std::complex<double>>& ea,
-// 	const std::vector<std::complex<double>>& eb,
-// 	std::vector<std::complex<double>>& v,
-// 	std::vector<std::complex<double>>& v_freq);
-
-// void run();
 
 #endif /* STRANG_SPLITTNG_LIB */
