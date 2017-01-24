@@ -9,11 +9,10 @@ add_definitions(
 	-pedantic
 	)
 
-add_library(strang_lib strang.cpp)
-
+#add_library(strang_lib strang.hpp)
 
 add_executable(simulator simulator.cpp)
-target_link_libraries(simulator strang_lib)
+#target_link_libraries(simulator strang_lib)
 
 
 ############# Eigen ##################
@@ -29,7 +28,7 @@ endif()
 
 ############# FFTW3 ##################
 find_library(FFTW_LIBRARY NAMES fftw3f)
-target_link_libraries(strang_lib ${FFTW_LIBRARY})
+#target_link_libraries(strang_lib ${FFTW_LIBRARY})
 target_link_libraries(simulator ${FFTW_LIBRARY})
 
 ############# HDF5 ##################
@@ -73,7 +72,7 @@ add_executable(hdf5_writer_test hdf5_unit_tests.cpp)
 # linking to gtest
 target_link_libraries(${PROJECT_TEST_NAME} ${LINK_LIBS})
 target_link_libraries(hdf5_writer_test ${LINK_LIBS})
-target_link_libraries(${PROJECT_TEST_NAME} strang_lib)
+#target_link_libraries(${PROJECT_TEST_NAME} strang_lib)
 
 
 # make the test runnable with 
@@ -89,4 +88,4 @@ add_test(
 )
 
 ############## Link everything together ##################
-target_link_libraries(strang_lib ${LINK_LIBS})
+target_link_libraries(simulator ${LINK_LIBS})
