@@ -16,7 +16,6 @@
 
 
 #include "types.hpp"		// from libwaveblocks
-#include "hdf5writer.hpp"
 
 
 #define SIMULATION_1D ;
@@ -91,7 +90,17 @@ public:
 
 			std::cout << "Norm = " << u_.norm() << std::endl;
 		}
-	
+
+	auto GetNumberOfGridPoints() const { return n_; }
+	auto GetEpsilon() const { return eps_; }
+	auto GetInverseEpsilon() const { return ieps_; }
+	auto GetGridScale() const { return grid_scale_; }
+	auto GetTimeFinal() const { return tend_; }
+	auto GetDt() const { return dt_; }
+	auto GetNumberOfTimeSteps() const { return n_timesteps_; }
+
+	auto& GetGrid() const { return grid_; }
+
 private: /* Member Functions */
 
 	/**
@@ -185,7 +194,6 @@ private: /* Member Functions */
 			return 0.5*x*x;
 		}
 	};
-
 
 
 public: /*Data Members*/
