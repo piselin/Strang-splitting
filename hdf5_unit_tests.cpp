@@ -2,11 +2,11 @@
 #include <string>
 #include <vector>
 #include "gtest/gtest.h"
-
 #include "H5Cpp.h"
 
 // my own libraries
 #include "hdf5writer.hpp"
+#include "strang.hpp"
 
 using namespace H5;
 
@@ -22,7 +22,7 @@ protected: // according to gtest primer
 	}
 
 	void SetUp() {
-
+		
 	}
 	H5File testfile_;
 	H5std_string filename_;
@@ -32,6 +32,11 @@ protected: // according to gtest primer
 
 TEST_F(TestHDF, SomeTest) {
 	EXPECT_EQ(0, 0.);
+}
+
+
+TEST_F(TestHDF, WriteBasicMatrix) {
+	
 }
 
 int main(int argc, char **argv) {
