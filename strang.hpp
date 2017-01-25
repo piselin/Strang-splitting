@@ -14,15 +14,9 @@
 //#include <fftw3.h>
 //#include "../kiss_fft130/kiss_fft.h"
 
-#include "types.hpp"
 
+#include "types.hpp"		// from libwaveblocks
 #include "hdf5writer.hpp"
-
-// Parameter
-// fixme pi: move to config file?
-const double kEps = 0.01;
-const double kIEps = 1.0/kEps;
-const auto kScaleGrid = M_PI;
 
 
 #define SIMULATION_1D ;
@@ -64,28 +58,28 @@ public:
 			// writer.tester();
 			Eigen::FFT<double> fft;
 
-			CMatrix<1,N> v_freq;
+			CMatrix<1,N> u_freq;
 
 			// Strang Splitting Algorithm
 			for(size_t step = 1; step < n_timesteps_; ++step) {
 			
-				// 1. v = eb*v
+				// 1. u = eb*u
 				for(size_t i = 0; i < n_; ++i)
-					v_[i] = eb_[i]*v_[i];
+					u_[i] = eb_[i]*u_[i];
 
-				// 2. v = fft(v)
-				fft.fwd(v_freq,v_);
+				// 2. u = fft(u)
+				fft.fwd(u_freq,u_);
 
-				// 3. v = ea*v
+				// 3. u = ea*u
 				for(size_t i = 0; i < n_; ++i)
-					v_freq[i] = ea_[i]*v_freq[i];
+					u_freq[i] = ea_[i]*u_freq[i];
 
-				// 4. v = ifft(v)
-				fft.inv(v_,v_freq);
+				// 4. u = ifft(u)
+				fft.inv(u_,u_freq);
 				
-				// 5. v = eb*v
+				// 5. u = eb*u
 				for(size_t i = 0; i < n_; ++i)
-					v_[i] = eb_[i]*v_[i];
+					u_[i] = eb_[i]*u_[i];
 			}
 
 
@@ -93,9 +87,9 @@ public:
 				//std::cout << "Norm in " << step << " = " << norm(v) << std::endl;
 
 			std::cout << "after" << std::endl;
-			std::cout << v_ << std::endl;
+			std::cout << u_ << std::endl;
 
-			std::cout << "Norm = " << v_.norm() << std::endl;
+			std::cout << "Norm = " << u_.norm() << std::endl;
 		}
 	
 private: /* Member Functions */
@@ -154,18 +148,23 @@ private: /* Member Functions */
 			v_pot_[i] = ieps_*potential(grid_[i]);
 	}
 
+	/**
+	Fixme pi: the initial value should be exchangeable
+	Post: 	creates v(t=0, x) for each grid point. The initial value
+			is currently of the form g(x) = a * e^(-1/2 x^2)
+	*/
 	void InitialValue() {
-
-		//////////// g1 initial value  /////////////////
 		auto a = std::sqrt(std::sqrt(ieps_/grid_scale_));
 		for(size_t i = 0; i < n_; i++) {
 			auto x = grid_[i];
 			x*=x; // x^2
-			v_[i] = a*std::exp(-1*0.5*ieps_*x);
+			u_[i] = a*std::exp(-1*0.5*ieps_*x);
 		}
-		////////////////////////////////////////////////
 	}
 
+	/**
+	Post:	Define exponentials according to 
+	*/
 	void InitializeExponentialA() {
 		for(size_t i = 0; i < n_; ++i)
 			ea_[i] = std::exp(-dt_complex_*laplacian_[i]);
@@ -190,10 +189,14 @@ private: /* Member Functions */
 
 
 public: /*Data Members*/
-
+	/**
+	Fixme pi: 	this should not be public. It is currently public for easy
+				GTesting. Remember, unit testing should just be a black-box
+				test. So change the gtest unit tests?
+	*/
 	#ifdef SIMULATION_1D
 		const dim_t dim_ = 1;
-		CMatrix<1,N> v_;	// the solution of the schrödinger equation
+		CMatrix<1,N> u_;	// the solution of the schrödinger equation
 		RMatrix<1,N> laplacian_;
 		RMatrix<1,N> grid_;
 		RMatrix<1,N> v_pot_;
@@ -215,9 +218,6 @@ private:
 	const double dt_;
 	unsigned int n_timesteps_;
 	complex_t dt_complex_;
-
-
-
 };
 
 #endif /* STRANG_SPLITTNG_LIB */

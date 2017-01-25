@@ -63,7 +63,7 @@ TEST_F(StrangSplitterTest, GridContent) {
 TEST_F(StrangSplitterTest, InitialValue) {
 	StrangSplitter<16> system(eps, tend, delta_t);
 
-	EXPECT_FLOAT_EQ(2.375268, system.v_.norm());
+	EXPECT_FLOAT_EQ(2.375268, system.u_.norm());
 }
 
 TEST_F(StrangSplitterTest, ExponentialA) {
