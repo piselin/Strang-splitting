@@ -10,9 +10,9 @@ add_definitions(
 	)
 
 #add_library(strang_lib strang.hpp)
-
 add_executable(simulator simulator.cpp)
 #target_link_libraries(simulator strang_lib)
+
 
 
 ############# Eigen ##################
