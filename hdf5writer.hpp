@@ -48,6 +48,15 @@ public:
 	Post:	Extends the HDF file with the results of the current timestep
 	*/
 	void StoreResult(const StrangSplitter<N>& system){
+		std::cout << "storing during timestep " << system.GetTimeCurrent() << std::endl;
+
+		// fixme check how often we need to store stuff...
+		SelectWritingSpace();
+		std::vector<ctype> transformed_data;
+		const auto& u = system.GetSolution();
+
+		transform(transformed_data, u);
+		u_ds_->write(transformed_data.data(), hdf_complex_type_, u_basic_space_, u_space_);
 
 	}
 
@@ -75,7 +84,7 @@ public:
 	struct ctype {
 		double real=0.;
 		double imag=0.;
-	};
+	} instanceof;
 private:
 	/**
 	Pre: 	Constructor was already called. This function should not be
@@ -83,19 +92,22 @@ private:
 	Post: 	HDF5 is created with all the correct metadata in place
 	*/
 	void Setup(const StrangSplitter<N>& system) {
-		// see prestructuring
-		// define group structure
-		// define dimension
-		// 
 
 		DefineGroupStructure();
 		WriteSimulationParameters(system);
 		WriteGrid(system); 
+		SetChunks();
+		SetDataSpaces();
+		AllocateDataSets();
+		SetBasicSpace();
+		SelectBasicHyperslabs();
 	}
 
 	void DefineGroupStructure() {
 		g_parameter_ = std::make_shared<Group>(file_.createGroup(path_parameters_));
 		g_grid_ = std::make_shared<Group>(file_.createGroup(path_grid_));
+		g_wave_ = std::make_shared<Group>(file_.createGroup(path_wave_));
+
 	}
 
 	/**
@@ -153,6 +165,60 @@ private:
 	}
 
 	/**
+	FIXME
+	*/
+	void SetChunks() {
+		// fixme i don't really understand what the time chunk is for...
+
+		hsize_t chunk_dim[] = {1,1,N};
+		propertylist_u_.setChunk(RANK3_, chunk_dim);
+		propertylist_u_.setFillValue(hdf_complex_type_, &instanceof);
+
+	}
+	/**
+	FIXME
+	*/
+	void SetDataSpaces() {
+		const hsize_t dim[] = {1,1,N};
+		const hsize_t maxdim[] = {H5S_UNLIMITED,H5S_UNLIMITED,H5S_UNLIMITED};
+		DataSpace s_u(RANK3_, dim, maxdim); 
+		u_space_ = s_u;
+	}
+	/**
+	FIXME
+	*/
+	void AllocateDataSets() {
+		u_ds_ = std::make_shared<DataSet>(
+			file_.createDataSet(path_wave_+"Yolo", hdf_complex_type_, u_space_, propertylist_u_));
+	}
+
+	void SetBasicSpace() {
+		u_basic_dim_[0] = 1;
+		u_basic_dim_[1] = 1;
+		u_basic_dim_[2] = N;
+		DataSpace s_temp(RANK3_, u_basic_dim_);
+		u_basic_space_ = s_temp;
+	}
+
+	void SelectBasicHyperslabs() {
+		hsize_t count[]={1,1,N};
+		hsize_t start[]={0,0,0};
+		hsize_t stride[]={1,1,1};
+		hsize_t block[]={1,1,1};
+
+		u_basic_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
+	}
+
+	void SelectWritingSpace() {
+		hsize_t count[]={1,1,N};
+		hsize_t start[]={index_packet_-1,0,0};
+		hsize_t stride[]={1,1,1};
+		hsize_t block[]={1,1,1};
+
+		u_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
+	}
+
+	/**
 	Post:	Transforms the Eigen::Matrix into a native array of the same type.
 			(Obviously this does not work for std::complex, there a different approach
 			is necessary.)
@@ -162,6 +228,18 @@ private:
 		//transformed_data.resize(N);
 		for(size_t i = 0; i < N; ++i)
 			transformed_data[i] = mat[i];
+	}
+
+	/**
+	Post:	content of complex Eigen::Matrix is stored in a vector of the ctype 
+			which in turn is used to fill the compound datatype hdf_complex_type_
+	*/
+	void transform(std::vector<ctype>& transformed_data, const CMatrix<1,N>& mat) const {
+		transformed_data.resize(N);
+		for(int i = 0; i < N; ++i) {
+			transformed_data[i].real = mat[i].real();
+			transformed_data[i].imag = mat[i].imag();
+		}
 	}
 
 private:
@@ -174,6 +252,17 @@ private:
 	std::shared_ptr<Group> g_parameter_;// group that holds the attributes which again hold the simulation parameters
 	std::shared_ptr<Group> g_grid_;		// space grid
 	std::shared_ptr<Group> g_wave_;		// solution of the simulation
+
+	/* DataSpace */
+	DataSpace u_space_;
+	DataSpace u_basic_space_;
+	hsize_t u_basic_dim_[3];
+
+	/* DataSet */
+	std::shared_ptr<DataSet> u_ds_;
+
+	/* Properties for DataSets*/
+	DSetCreatPropList propertylist_u_;
 
 	/* Attributes contain the simulation parameters*/
 	Attribute a_dt_;
@@ -192,6 +281,10 @@ private:
 	/* These strings describe the paths inside the HDF file */
 	const H5std_string path_parameters_="Simulation_Parameters";
 	const H5std_string path_grid_ = "Grid";
+	const H5std_string path_wave_ = "Wave";
+
+	int index_packet_ = 1;
+	int tindex_ = 0;
 };
 
 #endif /* STRANG_SPLITTING_HDF5_WRITER */
