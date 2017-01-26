@@ -6,7 +6,6 @@ project(${PROJECT_NAME})
 add_definitions(
 	-std=gnu++14
 	-Wall
-	-pedantic
 	)
 
 #add_library(strang_lib strang.hpp)

@@ -19,14 +19,16 @@ Main functionality is to store the result of the Strang Splitting
 in order to compare the output here to the results of WaveBlocks
 */
 template<dim_t N>
-class Hdf5Writer
+class StrangWriter
 {
 public:
 
 	/**
-	Construct a new writer by passing the filename
+	Construct a new writer by passing the filename and the system we want to store
+
+	Post:	hdf5 compatible complex datatype and file structure ready to go.
 	*/
-	Hdf5Writer(std::string filename, const StrangSplitter<N>& system) 
+	StrangWriter(std::string filename, const StrangSplitter<N>& system) 
 		: 
 		filename_(filename), 
 		file_(filename_,H5F_ACC_TRUNC),
@@ -44,19 +46,24 @@ public:
 	*/
 	void StoreResult(const StrangSplitter<N>& system){
 
-		store_counter_++;
+		store_counter_++;	// count how often this function was called
 
-		// We only write to the file
+		// If timestep_size is 1, we write every timestep to the file
+		// otherwise we do it only every n'th step.
 		if (store_counter_ % timestep_size_ == 0) {
-			std::cout << "storing during timestep " << system.GetTimeCurrent() << std::endl;
+			std::cout << "Storing step " << store_counter_<< std::endl;
 
 			SelectWritingSpace();
+
+			// Eigen Objects can't be written straight to HDF
+			// so we need to transform it first. 
 			std::vector<ctype> transformed_data;
 			const auto& u = system.GetSolution();
-
 			transform(transformed_data, u);
+
 			u_ds_->write(transformed_data.data(), hdf_complex_type_, u_basic_space_, u_space_);
 
+			// Set up the Writing space for the next iteration
 			AdvanceWriter();
 		}
 		
@@ -82,6 +89,8 @@ public:
 		timestep_size_ = t;
 	}
 
+	
+private:
 	/**
 	The HDF5 library needs access to the members of a type
 	so we cannot use std::complex
@@ -90,7 +99,7 @@ public:
 		double real=0.;
 		double imag=0.;
 	} instanceof;
-private:
+
 	/**
 	Pre: 	Constructor was already called. This function should not be
 			called somewhere else
@@ -292,7 +301,7 @@ private:
 	/*FIXME find better name for this... */
 	unsigned int timestep_size_ = 1; //how often do we print results. 1 means every timestep
 
-	int timestep_index_ = 1; // index of the 
+	hsize_t timestep_index_ = 1; // index of the 
 	
 
 	/* The Groups of the HDF file*/

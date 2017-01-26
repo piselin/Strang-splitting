@@ -14,12 +14,13 @@ int main() {
 	const auto n_timesteps = tend*10;		// Total number of timesteps
 	const auto dt = tend/n_timesteps;		// Size of a timestep
 		
-	const auto N = 16;
+	const auto l = 12;
+	const auto N = 1<<l;					// N = 2^l, N should be power of 2
 
 	// Setup the Solver
 	StrangSplitter<N> system(eps, tend, dt);
 
-	Hdf5Writer<N> writer("strang_1D_cpp.hdf5", system);
+	StrangWriter<N> writer("strang_1D_cpp.hdf5", system);
 	writer.StoreResult(system); // store the initial configuration
 	writer.StoreAfterNSteps(100);
 	

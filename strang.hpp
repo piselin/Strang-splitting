@@ -33,10 +33,11 @@ public:
 		n_(N),
 		eps_(epsilon),
 		tend_(T),
-		dt_(dt)
+		dt_(dt),
+		dt_complex_(dt_*1i)
 		{
+			assert(dt_ != 0 && ieps_ != 0);
 			n_timesteps_ = tend_ / dt_;
-			dt_complex_ = dt_*1i;
 			ieps_ = 1/eps_; 
 
 			CreateLaplacian();
@@ -221,7 +222,7 @@ private:
 	const double dt_;
 	double time_ = 0.;
 	unsigned int n_timesteps_;
-	complex_t dt_complex_;
+	const complex_t dt_complex_;
 	Eigen::FFT<double> fft_;
 };
 
