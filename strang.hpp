@@ -191,12 +191,8 @@ private: /* Member Functions */
 	};
 
 
-public: /*Data Members*/
-	/**
-	Fixme pi: 	this should not be public. It is currently public for easy
-				GTesting. Remember, unit testing should just be a black-box
-				test. So change the gtest unit tests?
-	*/
+private: /*Data Members*/
+
 	#ifdef SIMULATION_1D
 		const dim_t dim_ = 1;
 		CMatrix<1,N> u_;	// the solution of the schrödinger equation
@@ -208,7 +204,6 @@ public: /*Data Members*/
 		CMatrix<1,N> u_freq_;
 	#endif
 
-private:
 	#ifdef SIMULATION_2D
 		// not yet supported
 	#endif
