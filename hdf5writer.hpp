@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <iostream> /* Fixme remove me */
 
 #include <Eigen/Core>
 #include "H5Cpp.h" // CPP header for HDF interface
@@ -11,6 +10,9 @@
 #include "strang.hpp"
 
 using namespace H5;
+
+/*This has to be modified if we want to allow N*N matrices.  */
+const int DIMENSION_Y = 1;
 
 /**
 Main functionality is to store the result of the Strang Splitting
@@ -39,11 +41,6 @@ public:
 		Setup(system);
 	}
 
-	void tester() {
-		std::cout << "Class is working, dimension = " << N << std::endl;
-		//std::cout << filename_ << std::endl;
-	}
-
 	/**
 	Post:	Extends the HDF file with the results of the current timestep
 	*/
@@ -58,6 +55,7 @@ public:
 		transform(transformed_data, u);
 		u_ds_->write(transformed_data.data(), hdf_complex_type_, u_basic_space_, u_space_);
 
+		AdvanceWriter();
 	}
 
 	/**
@@ -66,7 +64,9 @@ public:
 			as small as possible.
 	*/
 	void Finalize() {
-
+		timestep_index_ -=1;
+		ExtendWritingSpace();
+		ExtendDataSet();
 	}
 
 	/**
@@ -121,13 +121,13 @@ private:
 		DataSpace s_parameters(RANK1_, size_parameters);
 
 		// Create Attributes
-		a_dt_ = g_parameter_->createAttribute("dt", PredType::NATIVE_DOUBLE, s_parameters);
-		a_eps_ = g_parameter_->createAttribute("epsilon", PredType::NATIVE_DOUBLE, s_parameters);
-		a_scale_ = g_parameter_->createAttribute("scale", PredType::NATIVE_DOUBLE, s_parameters);
-		a_n_timesteps_ = g_parameter_->createAttribute("n_timesteps", PredType::NATIVE_UINT, s_parameters);
+		a_dt_ = g_parameter_->createAttribute(attr_name_dt_, PredType::NATIVE_DOUBLE, s_parameters);
+		a_eps_ = g_parameter_->createAttribute(attr_name_eps_, PredType::NATIVE_DOUBLE, s_parameters);
+		a_scale_ = g_parameter_->createAttribute(attr_name_scale_, PredType::NATIVE_DOUBLE, s_parameters);
+		a_n_timesteps_ = g_parameter_->createAttribute(attr_name_n_timesteps_, PredType::NATIVE_UINT, s_parameters);
 		// dimensions of the grid, they go into the grid group
-		a_nx_ = g_grid_->createAttribute("Nx", PredType::NATIVE_UINT, s_parameters); 
-		a_ny_ = g_grid_->createAttribute("Ny", PredType::NATIVE_UINT, s_parameters);
+		a_nx_ = g_grid_->createAttribute(attr_name_nx_, PredType::NATIVE_UINT, s_parameters); 
+		a_ny_ = g_grid_->createAttribute(attr_name_ny_, PredType::NATIVE_UINT, s_parameters);
 
 		auto dt = system.GetDt();
 		auto eps = system.GetEpsilon();
@@ -159,7 +159,7 @@ private:
 		transform(transformed_grid, grid);
 
 		std::shared_ptr<DataSet> d_grid;
-		d_grid = std::make_shared<DataSet>(file_.createDataSet(path_grid_+"/Computational_Grid", PredType::NATIVE_DOUBLE, s_grid));	
+		d_grid = std::make_shared<DataSet>(file_.createDataSet(path_grid_+data_name_grid_, PredType::NATIVE_DOUBLE, s_grid));	
 
 		d_grid->write(transformed_grid, PredType::NATIVE_DOUBLE);
 	}
@@ -170,7 +170,7 @@ private:
 	void SetChunks() {
 		// fixme i don't really understand what the time chunk is for...
 
-		hsize_t chunk_dim[] = {1,1,N};
+		hsize_t chunk_dim[] = {1,N,1};
 		propertylist_u_.setChunk(RANK3_, chunk_dim);
 		propertylist_u_.setFillValue(hdf_complex_type_, &instanceof);
 
@@ -179,7 +179,7 @@ private:
 	FIXME
 	*/
 	void SetDataSpaces() {
-		const hsize_t dim[] = {1,1,N};
+		const hsize_t dim[] = {1,N,1};
 		const hsize_t maxdim[] = {H5S_UNLIMITED,H5S_UNLIMITED,H5S_UNLIMITED};
 		DataSpace s_u(RANK3_, dim, maxdim); 
 		u_space_ = s_u;
@@ -189,19 +189,19 @@ private:
 	*/
 	void AllocateDataSets() {
 		u_ds_ = std::make_shared<DataSet>(
-			file_.createDataSet(path_wave_+"Yolo", hdf_complex_type_, u_space_, propertylist_u_));
+			file_.createDataSet(path_wave_+data_name_u_, hdf_complex_type_, u_space_, propertylist_u_));
 	}
 
 	void SetBasicSpace() {
 		u_basic_dim_[0] = 1;
-		u_basic_dim_[1] = 1;
-		u_basic_dim_[2] = N;
+		u_basic_dim_[1] = N;
+		u_basic_dim_[2] = DIMENSION_Y;
 		DataSpace s_temp(RANK3_, u_basic_dim_);
 		u_basic_space_ = s_temp;
 	}
 
 	void SelectBasicHyperslabs() {
-		hsize_t count[]={1,1,N};
+		hsize_t count[]={1,N,DIMENSION_Y};
 		hsize_t start[]={0,0,0};
 		hsize_t stride[]={1,1,1};
 		hsize_t block[]={1,1,1};
@@ -210,12 +210,34 @@ private:
 	}
 
 	void SelectWritingSpace() {
-		hsize_t count[]={1,1,N};
-		hsize_t start[]={index_packet_-1,0,0};
+		hsize_t count[]={1,N,DIMENSION_Y};
+		hsize_t start[]={timestep_index_-1,0,0};
 		hsize_t stride[]={1,1,1};
 		hsize_t block[]={1,1,1};
 
 		u_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
+	}
+
+	void AdvanceWriter() {
+		timestep_index_+=1;
+		ExtendWritingSpace();
+		ExtendDataSet();
+		UpdateFileSpace();
+
+	}
+
+	void ExtendWritingSpace() {
+		extension_dim[0] = timestep_index_;
+		extension_dim[1] = N;
+		extension_dim[2] = DIMENSION_Y;
+	}
+
+	void ExtendDataSet() {
+		u_ds_->extend(extension_dim);
+	}
+
+	void UpdateFileSpace() {
+		u_space_=u_ds_->getSpace();
 	}
 
 	/**
@@ -258,6 +280,8 @@ private:
 	DataSpace u_basic_space_;
 	hsize_t u_basic_dim_[3];
 
+	hsize_t extension_dim[3];
+
 	/* DataSet */
 	std::shared_ptr<DataSet> u_ds_;
 
@@ -272,19 +296,29 @@ private:
 	Attribute a_nx_;
 	Attribute a_ny_;
 
-
 	/* DataSpace */
 	const int RANK1_=1;
     const int RANK2_=2;
     const int RANK3_=3;
 
 	/* These strings describe the paths inside the HDF file */
-	const H5std_string path_parameters_="Simulation_Parameters";
-	const H5std_string path_grid_ = "Grid";
-	const H5std_string path_wave_ = "Wave";
+	const H5std_string path_parameters_			="Simulation_Parameters";
+	const H5std_string path_grid_ 				= "Grid";
+	const H5std_string path_wave_ 				= "Wave";
 
-	int index_packet_ = 1;
-	int tindex_ = 0;
+	const H5std_string attr_name_dt_ 			= "dt";
+	const H5std_string attr_name_eps_ 			= "epsilon";
+	const H5std_string attr_name_scale_ 		= "scale";
+	const H5std_string attr_name_n_timesteps_ 	= "n_timesteps";
+	const H5std_string attr_name_nx_			= "Nx";
+	const H5std_string attr_name_ny_			= "Ny";
+
+	const H5std_string data_name_grid_			= "/Computational_Grid";
+	const H5std_string data_name_u_				= "/u";
+
+
+	int timestep_index_ = 1;
+
 };
 
 #endif /* STRANG_SPLITTING_HDF5_WRITER */
