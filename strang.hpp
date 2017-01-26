@@ -48,9 +48,9 @@ public:
 
 			InitialValue();
 
-			InitializeExponentialA();
+			CalculateExponentialA();
 
-			InitializeExponentialB();
+			CalculateExponentialB();
 		}
 
 		/**
@@ -79,6 +79,21 @@ public:
 			// 5. u = eb*u
 			for(size_t i = 0; i < n_; ++i)
 				u_[i] = eb_[i]*u_[i];
+		}
+
+		/**
+		Strang Splitting is time reversible,so we can change the 
+		"direction" of the method by inverting the timestep.
+		*/
+		void Reverse() {
+			dt_ *= -1;
+			dt_complex_ = dt_*1i;
+
+			// The exponentials depend on the timestep
+			// so we have to recalculate them
+			CalculateExponentialA();
+			CalculateExponentialB();
+
 		}
 
 	/* Some getter functions to simplify */
@@ -169,12 +184,12 @@ private: /* Member Functions */
 	/**
 	Post:	Define exponentials according to 
 	*/
-	void InitializeExponentialA() {
+	void CalculateExponentialA() {
 		for(size_t i = 0; i < n_; ++i)
 			ea_[i] = std::exp(-dt_complex_*laplacian_[i]);
 	}
 
-	void InitializeExponentialB() {
+	void CalculateExponentialB() {
 		for(size_t i = 0; i < n_; ++i)
 			eb_[i] = std::exp(-0.5*dt_complex_*v_pot_[i]);
 	}
@@ -208,16 +223,15 @@ private: /*Data Members*/
 		// not yet supported
 	#endif
 
-	//const unsigned int dim_;
 	const unsigned int n_; // number of grid points
 	const double eps_ = 0.01;
-	double ieps_ = 1.0/eps_;
 	const double grid_scale_ = M_PI;
 	const double tend_;
-	const double dt_;
+	double ieps_ = 1.0/eps_;
+	double dt_;
 	double time_ = 0.;
 	unsigned int n_timesteps_;
-	const complex_t dt_complex_;
+	complex_t dt_complex_;
 	Eigen::FFT<double> fft_;
 };
 

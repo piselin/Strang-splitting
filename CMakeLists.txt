@@ -6,6 +6,7 @@ project(${PROJECT_NAME})
 add_definitions(
 	-std=gnu++14
 	-Wall
+	-O3
 	)
 
 #add_library(strang_lib strang.hpp)
@@ -66,11 +67,11 @@ set(LINK_LIBS ${LINK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 # Unit tests
 add_executable(${PROJECT_TEST_NAME} unit_tests.cpp)
-add_executable(hdf5_writer_test hdf5_unit_tests.cpp)
+add_executable(hdf5-writer-test hdf5_unit_tests.cpp)
 
 # linking to gtest
 target_link_libraries(${PROJECT_TEST_NAME} ${LINK_LIBS})
-target_link_libraries(hdf5_writer_test ${LINK_LIBS})
+target_link_libraries(hdf5-writer-test ${LINK_LIBS})
 #target_link_libraries(${PROJECT_TEST_NAME} strang_lib)
 
 
@@ -82,8 +83,8 @@ add_test(
 	COMMAND ${PROJECT_TEST_NAME}
 )
 add_test(
-	NAME hdf5_writer_test
-	COMMAND hdf5_writer_test
+	NAME hdf5-writer-test
+	COMMAND hdf5-writer-test
 )
 
 ############## Link everything together ##################

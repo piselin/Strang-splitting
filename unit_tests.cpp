@@ -27,9 +27,48 @@ protected:
 	double eps_;
 	double ieps_;
 	double tend_;
-	double n_timesteps_;
+	unsigned int n_timesteps_;
 	double dt_; 
 };
+
+TEST_F(StrangSplitterTest, CheckTimeReversal) {
+	const auto exponent = 4;
+	const auto size = 2 << exponent;
+
+	StrangSplitter<size> system(eps_, tend_, dt_);
+
+	// Advance by 1 step to get the Solution at t=1
+	system.Advance();
+
+	// Store results
+	auto u1 = system.GetSolution();
+	auto norm_initial = system.Norm();
+
+	
+	// Run the System until t = T
+	for(unsigned int step = 0; step < n_timesteps_; ++step){
+		system.Advance();
+	}
+
+	system.Reverse();
+	
+	// Run the System "backwards" until t=1 again
+	for(unsigned int step = n_timesteps_; step > 0; --step) {
+		system.Advance();
+	}
+
+	// Store results of the reversed run
+	auto u2 = system.GetSolution();
+	auto norm_end = system.Norm();
+
+	// compare
+	EXPECT_FLOAT_EQ(norm_initial, norm_end);
+	EXPECT_EQ(u2.size(), u1.size());
+	for(unsigned int i = 0; i < u1.size(); ++i) {
+		EXPECT_FLOAT_EQ(u1[i].real(), u2[i].real());
+		EXPECT_FLOAT_EQ(u1[i].imag(), u2[i].imag());
+	}
+}
 
 TEST_F(StrangSplitterTest, CheckDifferentSystemSizes) {
 	const auto max_exponent = 13;
