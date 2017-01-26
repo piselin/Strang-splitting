@@ -80,6 +80,7 @@ public:
 				u_[i] = eb_[i]*u_[i];
 		}
 
+	/* Some getter functions to simplify */
 	auto GetNumberOfGridPoints() const { return n_; }
 	auto GetEpsilon() const { return eps_; }
 	auto GetInverseEpsilon() const { return ieps_; }
@@ -92,7 +93,7 @@ public:
 	auto& GetGrid() const { return grid_; }
 	auto& GetSolution() const { return u_; }
 
-	auto Norm() const { return u_.norm(); }
+	auto Norm() const { return u_.norm(); } // Eigen lib calculates this norm.
 
 private: /* Member Functions */
 
@@ -178,7 +179,7 @@ private: /* Member Functions */
 	}
 
 	/**
-	The Potential for 
+	The Potential 
 	*/
 	template<typename T>
 	class HarmonicPotential {

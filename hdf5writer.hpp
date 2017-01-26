@@ -5,7 +5,7 @@
 #include <memory>
 
 #include <Eigen/Core>
-#include "H5Cpp.h" // CPP header for HDF interface
+#include "H5Cpp.h" // CPP header for HDF5 interface
 
 #include "strang.hpp"
 
@@ -17,8 +17,6 @@ const int DIMENSION_Y = 1;
 /**
 Main functionality is to store the result of the Strang Splitting
 in order to compare the output here to the results of WaveBlocks
-
-Fixme (this is not so correct): The class is templated on the dimension N of the simulation
 */
 template<dim_t N>
 class Hdf5Writer
@@ -45,17 +43,23 @@ public:
 	Post:	Extends the HDF file with the results of the current timestep
 	*/
 	void StoreResult(const StrangSplitter<N>& system){
-		std::cout << "storing during timestep " << system.GetTimeCurrent() << std::endl;
 
-		// fixme check how often we need to store stuff...
-		SelectWritingSpace();
-		std::vector<ctype> transformed_data;
-		const auto& u = system.GetSolution();
+		store_counter_++;
 
-		transform(transformed_data, u);
-		u_ds_->write(transformed_data.data(), hdf_complex_type_, u_basic_space_, u_space_);
+		// We only write to the file
+		if (store_counter_ % timestep_size_ == 0) {
+			std::cout << "storing during timestep " << system.GetTimeCurrent() << std::endl;
 
-		AdvanceWriter();
+			SelectWritingSpace();
+			std::vector<ctype> transformed_data;
+			const auto& u = system.GetSolution();
+
+			transform(transformed_data, u);
+			u_ds_->write(transformed_data.data(), hdf_complex_type_, u_basic_space_, u_space_);
+
+			AdvanceWriter();
+		}
+		
 	}
 
 	/**
@@ -70,10 +74,11 @@ public:
 	}
 
 	/**
+	fixme find better name for this...
 	Post:	Changing the timestep size to another value than 1 (which is the default)
 			will store results only at every t'th timestep
 	*/
-	void SetTimestepSize(const unsigned int t) {
+	void StoreAfterNSteps(const unsigned int t) {
 		timestep_size_ = t;
 	}
 
@@ -191,7 +196,9 @@ private:
 		u_ds_ = std::make_shared<DataSet>(
 			file_.createDataSet(path_wave_+data_name_u_, hdf_complex_type_, u_space_, propertylist_u_));
 	}
-
+	/**
+	FIXME
+	*/
 	void SetBasicSpace() {
 		u_basic_dim_[0] = 1;
 		u_basic_dim_[1] = N;
@@ -199,7 +206,9 @@ private:
 		DataSpace s_temp(RANK3_, u_basic_dim_);
 		u_basic_space_ = s_temp;
 	}
-
+	/**
+	FIXME
+	*/
 	void SelectBasicHyperslabs() {
 		hsize_t count[]={1,N,DIMENSION_Y};
 		hsize_t start[]={0,0,0};
@@ -208,7 +217,9 @@ private:
 
 		u_basic_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
 	}
-
+	/**
+	FIXME
+	*/
 	void SelectWritingSpace() {
 		hsize_t count[]={1,N,DIMENSION_Y};
 		hsize_t start[]={timestep_index_-1,0,0};
@@ -217,7 +228,9 @@ private:
 
 		u_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
 	}
-
+	/**
+	FIXME
+	*/
 	void AdvanceWriter() {
 		timestep_index_+=1;
 		ExtendWritingSpace();
@@ -225,17 +238,23 @@ private:
 		UpdateFileSpace();
 
 	}
-
+	/**
+	FIXME
+	*/
 	void ExtendWritingSpace() {
 		extension_dim[0] = timestep_index_;
 		extension_dim[1] = N;
 		extension_dim[2] = DIMENSION_Y;
 	}
-
+	/**
+	FIXME
+	*/
 	void ExtendDataSet() {
 		u_ds_->extend(extension_dim);
 	}
-
+	/**
+	FIXME
+	*/
 	void UpdateFileSpace() {
 		u_space_=u_ds_->getSpace();
 	}
@@ -268,7 +287,13 @@ private:
 	H5std_string filename_;
 	H5File file_;
 	CompType hdf_complex_type_;
+	unsigned int store_counter_ = 0; //counts how often the store function has been called
+	
+	/*FIXME find better name for this... */
 	unsigned int timestep_size_ = 1; //how often do we print results. 1 means every timestep
+
+	int timestep_index_ = 1; // index of the 
+	
 
 	/* The Groups of the HDF file*/
 	std::shared_ptr<Group> g_parameter_;// group that holds the attributes which again hold the simulation parameters
@@ -317,8 +342,7 @@ private:
 	const H5std_string data_name_u_				= "/u";
 
 
-	int timestep_index_ = 1;
-
+	
 };
 
 #endif /* STRANG_SPLITTING_HDF5_WRITER */
