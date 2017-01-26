@@ -52,43 +52,32 @@ public:
 			InitializeExponentialB();
 		}
 
-		void Split() {
-			// Hdf5Writer<4> writer("strang_1D_cpp.hdf5");
-			// writer.tester();
-			Eigen::FFT<double> fft;
+		/**
+		Pre: 	fft, laplacian, grid, potential, initialvalue 
+				and exponentials are setup.
+		Post: 	Performs 1 Step of the strang splitting algorithm
+				and thereby advances the system by 1 time step.
+		*/
+		void Advance() {
+			time_ += dt_;
 
-			CMatrix<1,N> u_freq;
+			// 1. u = eb*u
+			for(size_t i = 0; i < n_; ++i)
+				u_[i] = eb_[i]*u_[i];
 
-			// Strang Splitting Algorithm
-			for(size_t step = 1; step < n_timesteps_; ++step) {
+			// 2. u = fft(u)
+			fft_.fwd(u_freq_,u_);
+
+			// 3. u = ea*u
+			for(size_t i = 0; i < n_; ++i)
+				u_freq_[i] = ea_[i]*u_freq_[i];
+
+			// 4. u = ifft(u)
+			fft_.inv(u_,u_freq_);
 			
-				// 1. u = eb*u
-				for(size_t i = 0; i < n_; ++i)
-					u_[i] = eb_[i]*u_[i];
-
-				// 2. u = fft(u)
-				fft.fwd(u_freq,u_);
-
-				// 3. u = ea*u
-				for(size_t i = 0; i < n_; ++i)
-					u_freq[i] = ea_[i]*u_freq[i];
-
-				// 4. u = ifft(u)
-				fft.inv(u_,u_freq);
-				
-				// 5. u = eb*u
-				for(size_t i = 0; i < n_; ++i)
-					u_[i] = eb_[i]*u_[i];
-			}
-
-
-				//writer.StoreResult();
-				//std::cout << "Norm in " << step << " = " << norm(v) << std::endl;
-
-			std::cout << "after" << std::endl;
-			std::cout << u_ << std::endl;
-
-			std::cout << "Norm = " << u_.norm() << std::endl;
+			// 5. u = eb*u
+			for(size_t i = 0; i < n_; ++i)
+				u_[i] = eb_[i]*u_[i];
 		}
 
 	auto GetNumberOfGridPoints() const { return n_; }
@@ -96,10 +85,14 @@ public:
 	auto GetInverseEpsilon() const { return ieps_; }
 	auto GetGridScale() const { return grid_scale_; }
 	auto GetTimeFinal() const { return tend_; }
+	auto GetTimeCurrent() const { return time_; }
 	auto GetDt() const { return dt_; }
 	auto GetNumberOfTimeSteps() const { return n_timesteps_; }
 
 	auto& GetGrid() const { return grid_; }
+	auto& GetSolution() const { return u_; }
+
+	auto Norm() const { return u_.norm(); }
 
 private: /* Member Functions */
 
@@ -210,6 +203,7 @@ public: /*Data Members*/
 		RMatrix<1,N> v_pot_;
 		CMatrix<1,N> ea_;
 		CMatrix<1,N> eb_;
+		CMatrix<1,N> u_freq_;
 	#endif
 
 private:
@@ -224,8 +218,10 @@ private:
 	const double grid_scale_ = M_PI;
 	const double tend_;
 	const double dt_;
+	double time_ = 0.;
 	unsigned int n_timesteps_;
 	complex_t dt_complex_;
+	Eigen::FFT<double> fft_;
 };
 
 #endif /* STRANG_SPLITTNG_LIB */
