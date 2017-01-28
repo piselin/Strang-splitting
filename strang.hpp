@@ -8,18 +8,16 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <unsupported/Eigen/MatrixFunctions>
 #include <unsupported/Eigen/FFT>
-
-//#include <fftw3.h>
-//#include "../kiss_fft130/kiss_fft.h"
 
 
 #include "types.hpp"		// from libwaveblocks
 
+// changing the precision to float means that we have to
+// link to the float library of fftw3 (in case fftw3 backend is used)
+using FFTPrecision = double;
 
 #define SIMULATION_1D ;
-//#define SIMULATION_2D;
 
 template <dim_t N>
 class StrangSplitter {
@@ -33,9 +31,9 @@ public:
 		n_(N),
 		eps_(epsilon),
 		tend_(T),
-		dt_(dt),
-		dt_complex_(dt_*1i)
+		dt_(dt)
 		{
+			// Fixme check if N ist 2er potenz
 			assert(dt_ != 0 && ieps_ != 0);
 			n_timesteps_ = tend_ / dt_;
 			ieps_ = 1/eps_; 
@@ -63,22 +61,19 @@ public:
 			time_ += dt_;
 
 			// 1. u = eb*u
-			for(size_t i = 0; i < n_; ++i)
-				u_[i] = eb_[i]*u_[i];
+			u_ = eb_.cwiseProduct(u_);
 
 			// 2. u = fft(u)
 			fft_.fwd(u_freq_,u_);
 
 			// 3. u = ea*u
-			for(size_t i = 0; i < n_; ++i)
-				u_freq_[i] = ea_[i]*u_freq_[i];
+			u_freq_ = ea_.cwiseProduct(u_freq_);
 
 			// 4. u = ifft(u)
 			fft_.inv(u_,u_freq_);
 			
 			// 5. u = eb*u
-			for(size_t i = 0; i < n_; ++i)
-				u_[i] = eb_[i]*u_[i];
+			u_ = eb_.cwiseProduct(u_);
 		}
 
 		/**
@@ -87,8 +82,7 @@ public:
 		*/
 		void Reverse() {
 			dt_ *= -1;
-			dt_complex_ = dt_*1i;
-
+			
 			// The exponentials depend on the timestep
 			// so we have to recalculate them
 			CalculateExponentialA();
@@ -106,8 +100,8 @@ public:
 	auto GetDt() const { return dt_; }
 	auto GetNumberOfTimeSteps() const { return n_timesteps_; }
 
-	auto& GetGrid() const { return grid_; }
-	auto& GetSolution() const { return u_; }
+	const auto& GetGrid() const { return grid_; }
+	const auto& GetSolution() const { return u_; }
 
 	auto Norm() const { return u_.norm(); } // Eigen lib calculates this norm.
 
@@ -185,13 +179,15 @@ private: /* Member Functions */
 	Post:	Define exponentials according to 
 	*/
 	void CalculateExponentialA() {
+		complex_t dt_complex = dt_*1i;
 		for(size_t i = 0; i < n_; ++i)
-			ea_[i] = std::exp(-dt_complex_*laplacian_[i]);
+			ea_[i] = std::exp(-dt_complex*laplacian_[i]);
 	}
 
 	void CalculateExponentialB() {
+		complex_t dt_complex = 0.5*dt_*1i; // only half a time step
 		for(size_t i = 0; i < n_; ++i)
-			eb_[i] = std::exp(-0.5*dt_complex_*v_pot_[i]);
+			eb_[i] = std::exp(-dt_complex*v_pot_[i]);
 	}
 
 	/**
@@ -231,8 +227,7 @@ private: /*Data Members*/
 	double dt_;
 	double time_ = 0.;
 	unsigned int n_timesteps_;
-	complex_t dt_complex_;
-	Eigen::FFT<double> fft_;
+	Eigen::FFT<FFTPrecision> fft_;
 };
 
 #endif /* STRANG_SPLITTNG_LIB */
