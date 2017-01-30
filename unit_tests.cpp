@@ -5,15 +5,6 @@
 // my own libraries
 #include "strang.hpp"
 
-class FFtransformTest : public ::testing::Test {
-	// setup
-	virtual void SetUp() {}
-	// if we would write
-	//virtual void SetUp() = 0;
-	// this would be a pure virtual function, making the class abstract.
-	// not sure if this would work for GTest
-};
-
 class StrangSplitterTest : public ::testing::Test {
 protected:
 	virtual void SetUp() {
@@ -100,20 +91,6 @@ TEST_F(StrangSplitterTest, CheckDifferentSystemSizes) {
 	}
 
 	EXPECT_FLOAT_EQ(system.Norm(), reference[size]);
-
-
-	// size_t cnt = 0;
-
-	// for(auto N = 4; N <= max_size; N*=2) {
-	// 	StrangSplitter<4> system(eps_, tend_, dt_);
-
-	// 	for(real_t t = dt_; t < tend_; t+=dt_) {
-	// 		system.Advance();
-	// 	}
-
-	// 	EXPECT_FLOAT_EQ(system.Norm(), reference[N]);
-	// 	cnt++;
-	// }
 
 }
 

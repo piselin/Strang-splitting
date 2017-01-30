@@ -31,7 +31,6 @@ int main() {
 		writer.StoreResult(system);
 	}
 
-	writer.Finalize();
 	std::cout << "... and we are done." << std::endl;
 	std::cout << "Norm(u) = " << system.Norm() << std::endl;
 

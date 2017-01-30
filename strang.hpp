@@ -10,7 +10,6 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
 
-
 #include "types.hpp"		// from libwaveblocks
 
 // changing the precision to float means that we have to
