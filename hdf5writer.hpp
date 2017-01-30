@@ -11,7 +11,8 @@
 
 using namespace H5;
 
-/*This has to be modified if we want to allow N*N matrices.  */
+/*If we want N*N matrices, remove this and replace each occurence 
+ with the template parameter N*/
 const int DIMENSION_Y = 1;
 
 /**
@@ -40,8 +41,11 @@ public:
 
 		Setup(system);
 	}
+	~StrangWriter() {
+		Finalize();
+	}
 
-	/**
+	/*
 	Post:	Extends the HDF file with the results of the current timestep
 	*/
 	void StoreResult(const StrangSplitter<N>& system){
@@ -69,19 +73,9 @@ public:
 		
 	}
 
-	/**
-	Post:	After the simulation is done and all results are collected
-			this function will clean up the created hdf5 file and make it
-			as small as possible.
-	*/
-	void Finalize() {
-		timestep_index_ -=1;
-		ExtendWritingSpace();
-		ExtendDataSet();
-	}
+	
 
 	/**
-	fixme find better name for this...
 	Post:	Changing the timestep size to another value than 1 (which is the default)
 			will store results only at every t'th timestep
 	*/
@@ -106,13 +100,14 @@ private:
 	Post: 	HDF5 is created with all the correct metadata in place
 	*/
 	void Setup(const StrangSplitter<N>& system) {
-
 		DefineGroupStructure();
+		// For the simple static data, ie. parameters and grid
 		WriteSimulationParameters(system);
 		WriteGrid(system); 
+		// For the more complicated, growing data, ie. the solution.
 		SetChunks();
 		SetDataSpaces();
-		AllocateDataSets();
+		AllocateDataSets();	
 		SetBasicSpace();
 		SelectBasicHyperslabs();
 	}
@@ -120,7 +115,7 @@ private:
 	void DefineGroupStructure() {
 		g_parameter_ = std::make_shared<Group>(file_.createGroup(path_parameters_));
 		g_grid_ = std::make_shared<Group>(file_.createGroup(path_grid_));
-		g_wave_ = std::make_shared<Group>(file_.createGroup(path_wave_));
+		g_solution_ = std::make_shared<Group>(file_.createGroup(path_solution_));
 
 	}
 
@@ -162,14 +157,11 @@ private:
 	*/
 	void WriteGrid(const StrangSplitter<N>& system) {
 		
-		hsize_t size_parameters[] = {1};	// Parameters are always just 1 element
-		DataSpace s_parameters(RANK1_, size_parameters);
-
 		hsize_t size_grid[] = {N};
 		DataSpace s_grid(RANK1_, size_grid);
 		const auto& grid = system.GetGrid();
 
-		double transformed_grid[N];
+		real_t transformed_grid[N];
 		transform(transformed_grid, grid);
 
 		std::shared_ptr<DataSet> d_grid;
@@ -179,34 +171,33 @@ private:
 	}
 
 	/**
-	FIXME
+	Post:	Property list describing dimensionality of chunked data
 	*/
 	void SetChunks() {
-		// fixme i don't really understand what the time chunk is for...
-
-		hsize_t chunk_dim[] = {1,N,1};
+		hsize_t chunk_dim[] = {1,N,DIMENSION_Y};
 		propertylist_u_.setChunk(RANK3_, chunk_dim);
 		propertylist_u_.setFillValue(hdf_complex_type_, &instanceof);
 
 	}
 	/**
-	FIXME
+	Post: 	Initial DataSpace is set with the unlimited tag
 	*/
 	void SetDataSpaces() {
-		const hsize_t dim[] = {1,N,1};
+		const hsize_t dim[] = {1,N,DIMENSION_Y};
 		const hsize_t maxdim[] = {H5S_UNLIMITED,H5S_UNLIMITED,H5S_UNLIMITED};
 		DataSpace s_u(RANK3_, dim, maxdim); 
 		u_space_ = s_u;
 	}
 	/**
-	FIXME
+	Post:	Initial DataSet is created within the file
 	*/
 	void AllocateDataSets() {
 		u_ds_ = std::make_shared<DataSet>(
-			file_.createDataSet(path_wave_+data_name_u_, hdf_complex_type_, u_space_, propertylist_u_));
+			file_.createDataSet(path_solution_+data_name_u_, hdf_complex_type_, u_space_, propertylist_u_));
 	}
 	/**
-	FIXME
+	This only needs to be called once because the source space never changes
+	Post:	Define the source space, this layout never changes
 	*/
 	void SetBasicSpace() {
 		u_basic_dim_[0] = 1;
@@ -216,7 +207,8 @@ private:
 		u_basic_space_ = s_temp;
 	}
 	/**
-	FIXME
+	This only needs to be called once because the source space never changes
+	Post:	Source space is selected
 	*/
 	void SelectBasicHyperslabs() {
 		hsize_t count[]={1,N,DIMENSION_Y};
@@ -227,18 +219,23 @@ private:
 		u_basic_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
 	}
 	/**
-	FIXME
+	Post:	Dynamic writing space is selected
 	*/
 	void SelectWritingSpace() {
 		hsize_t count[]={1,N,DIMENSION_Y};
-		hsize_t start[]={timestep_index_-1,0,0};
+		
+		hsize_t start[3];
+		start[0] = timestep_index_-1;
+		start[1] = 0;
+		start[2] = 0;
+		
 		hsize_t stride[]={1,1,1};
 		hsize_t block[]={1,1,1};
 
 		u_space_.selectHyperslab(H5S_SELECT_SET, count, start, stride, block);
 	}
 	/**
-	FIXME
+	Post:	HDF5 file is now ready write the next timestep
 	*/
 	void AdvanceWriter() {
 		timestep_index_+=1;
@@ -248,7 +245,7 @@ private:
 
 	}
 	/**
-	FIXME
+	Post:	Dimensions for the new DataSpace are set
 	*/
 	void ExtendWritingSpace() {
 		extension_dim[0] = timestep_index_;
@@ -256,13 +253,13 @@ private:
 		extension_dim[2] = DIMENSION_Y;
 	}
 	/**
-	FIXME
+	Post:	Dimension for the new DataSpace are now extended
 	*/
 	void ExtendDataSet() {
 		u_ds_->extend(extension_dim);
 	}
 	/**
-	FIXME
+	Post:	Recover the newly created DataSpace for the current DataSet	
 	*/
 	void UpdateFileSpace() {
 		u_space_=u_ds_->getSpace();
@@ -291,6 +288,16 @@ private:
 			transformed_data[i].imag = mat[i].imag();
 		}
 	}
+	/**
+	Post:	After the simulation is done and all results are collected
+			this function will clean up the created hdf5 file and make it
+			as small as possible.
+	*/
+	void Finalize() {
+		timestep_index_ -=1;
+		ExtendWritingSpace();
+		ExtendDataSet();
+	}
 
 private:
 	H5std_string filename_;
@@ -298,7 +305,6 @@ private:
 	CompType hdf_complex_type_;
 	unsigned int store_counter_ = 0; //counts how often the store function has been called
 	
-	/*FIXME find better name for this... */
 	unsigned int timestep_size_ = 1; //how often do we print results. 1 means every timestep
 
 	hsize_t timestep_index_ = 1; // index of the 
@@ -307,7 +313,7 @@ private:
 	/* The Groups of the HDF file*/
 	std::shared_ptr<Group> g_parameter_;// group that holds the attributes which again hold the simulation parameters
 	std::shared_ptr<Group> g_grid_;		// space grid
-	std::shared_ptr<Group> g_wave_;		// solution of the simulation
+	std::shared_ptr<Group> g_solution_;		// solution of the simulation
 
 	/* DataSpace */
 	DataSpace u_space_;
@@ -336,9 +342,9 @@ private:
     const int RANK3_=3;
 
 	/* These strings describe the paths inside the HDF file */
-	const H5std_string path_parameters_			="Simulation_Parameters";
+	const H5std_string path_parameters_			= "Simulation_Parameters";
 	const H5std_string path_grid_ 				= "Grid";
-	const H5std_string path_wave_ 				= "Wave";
+	const H5std_string path_solution_ 			= "Solution";
 
 	const H5std_string attr_name_dt_ 			= "dt";
 	const H5std_string attr_name_eps_ 			= "epsilon";
