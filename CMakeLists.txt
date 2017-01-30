@@ -11,7 +11,10 @@ add_definitions(
 	-O3
 )
 
+# Add this definition if the FFTW3 backend should be used
+# without this, the default backend kissFFT will be used.
 add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 add_executable(${target_name} simulator.cpp)
 
 
@@ -19,11 +22,11 @@ add_executable(${target_name} simulator.cpp)
 find_package(Eigen3 REQUIRED QUIET)
 include(FindPkgConfig)
 if(PKG_CONFIG_FOUND)
-  pkg_search_module(EIGEN REQUIRED eigen3)
-if(EIGEN_FOUND)
-	include_directories(${EIGEN_INCLUDE_DIRS})
-	message("EIGEN_INCLUDE_DIRS " ${EIGEN_INCLUDE_DIRS})
-endif()
+	pkg_search_module(EIGEN REQUIRED eigen3)
+	if(EIGEN_FOUND)
+		include_directories(${EIGEN_INCLUDE_DIRS})
+		message("EIGEN_INCLUDE_DIRS " ${EIGEN_INCLUDE_DIRS})
+	endif()
 endif()
 
 ############# FFTW3 ##################
