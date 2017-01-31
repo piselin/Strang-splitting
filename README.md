@@ -11,6 +11,6 @@ Strang splitting for the time-dependent Schrödinger equation and HDF5 serializa
 + Google Test
 
 ## Usage
-1. $cmake .
-2. $make 
-3. $make test
+1. $ cmake .
+2. $ make 
+3. $ make test
